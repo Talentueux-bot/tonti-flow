@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Users, Calendar, DollarSign, MessageCircle, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight, Users, Calendar, DollarSign, MessageCircle, Check, Copy } from "lucide-react";
 
 const frequencies = [
   { value: "weekly", label: "Hebdomadaire" },
