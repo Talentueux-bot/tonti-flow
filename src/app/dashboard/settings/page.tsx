@@ -163,29 +163,58 @@ export default function SettingsPage() {
 
       {/* Mobile Money */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-50">
-          <Smartphone className="w-4 h-4 text-emerald-600" />
-          <h2 className="font-semibold text-gray-900">Mobile Money par défaut</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-emerald-600" />
+            <h2 className="font-semibold text-gray-900">Moyens de paiement</h2>
+          </div>
+          <Link href="/dashboard/payments" className="text-xs text-emerald-600 font-semibold hover:underline flex items-center gap-1">
+            Gérer <ChevronRight className="w-3 h-3" />
+          </Link>
         </div>
         <div className="p-6 space-y-3">
-          {[
-            { name: "Wave", number: "+221 77 123 45 67", active: true },
-            { name: "Orange Money", number: "+221 77 123 45 67", active: false },
-          ].map((m) => (
-            <label key={m.name} className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${m.active ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-gray-300"}`}>
-              <div className="flex items-center gap-3">
-                <input type="radio" name="mobile-money" defaultChecked={m.active} className="text-emerald-600" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{m.name}</p>
-                  <p className="text-xs text-gray-400">{m.number}</p>
-                </div>
-              </div>
-              {m.active && <span className="text-xs text-emerald-600 font-semibold">Défaut</span>}
-            </label>
-          ))}
-          <button className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm font-medium text-gray-500 hover:border-emerald-400 hover:text-emerald-600 transition-colors">
-            + Ajouter un moyen de paiement
-          </button>
+          {methods.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-400 mb-3">Aucun moyen de paiement configuré.</p>
+              <Link
+                href="/dashboard/payments"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+              >
+                <Plus className="w-4 h-4" />
+                Ajouter un moyen de paiement
+              </Link>
+            </div>
+          ) : (
+            <>
+              {methods.map((m) => (
+                <label
+                  key={m.id}
+                  onClick={() => setDefault(m.id)}
+                  className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    m.isDefault ? "border-emerald-500 bg-emerald-50" : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-xl ${PLATFORM_BG[m.type] ?? "bg-gray-400"} text-white text-xs font-bold flex items-center justify-center`}>
+                      {PLATFORM_LOGO[m.type] ?? "?"}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{m.label}</p>
+                      <p className="text-xs text-gray-400">{m.number.slice(0, 4)}••••{m.number.slice(-2)}</p>
+                    </div>
+                  </div>
+                  {m.isDefault && <span className="text-xs text-emerald-600 font-semibold">Défaut</span>}
+                </label>
+              ))}
+              <Link
+                href="/dashboard/payments"
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-sm font-medium text-gray-500 hover:border-emerald-400 hover:text-emerald-600 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Ajouter un moyen de paiement
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
