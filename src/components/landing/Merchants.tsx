@@ -116,12 +116,12 @@ export default function Merchants() {
               Aucun compte bancaire requis · Démarrez en 2 minutes
             </p>
           </div>
-          <a
-            href="#"
+          <Link
+            href="/auth/register"
             className="shrink-0 px-7 py-3.5 rounded-xl font-semibold text-emerald-700 bg-white hover:bg-emerald-50 transition-colors shadow-md text-sm"
           >
             Créer ma tontine gratuitement →
-          </a>
+          </Link>
         </div>
       </div>
     </section>
