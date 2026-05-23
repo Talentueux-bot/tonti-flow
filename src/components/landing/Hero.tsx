@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Play, Shield, CheckCircle, Users, TrendingUp } from "lucide-react";
 
