@@ -57,13 +57,13 @@ export default function Hero() {
 
             {/* CTA */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="#"
+              <Link
+                href="/auth/register"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 transition-opacity shadow-lg shadow-emerald-200 text-base"
               >
                 Créer une tontine gratuitement
                 <ArrowRight className="w-4 h-4" />
-              </a>
+              </Link>
               <a
                 href="#how-it-works"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors text-base"
