@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Menu, X, Zap } from "lucide-react";
 
 const navLinks = [
@@ -31,14 +32,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg gradient-emerald flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" fill="white" />
             </div>
             <span className="text-xl font-bold text-gray-900">
               Tonti<span className="text-emerald-600">Flow</span>
             </span>
-          </a>
+          </Link>
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8">
@@ -55,18 +56,18 @@ export default function Navbar() {
 
           {/* CTA buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <a
-              href="#"
+            <Link
+              href="/auth/login"
               className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
             >
               Se connecter
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              href="/auth/register"
               className="px-4 py-2 rounded-xl text-sm font-semibold text-white gradient-emerald hover:opacity-90 transition-opacity shadow-md shadow-emerald-200"
             >
               Commencer gratuitement
-            </a>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -92,18 +93,20 @@ export default function Navbar() {
               </a>
             ))}
             <div className="px-4 pt-3 flex flex-col gap-2">
-              <a
-                href="#"
+              <Link
+                href="/auth/login"
+                onClick={() => setIsOpen(false)}
                 className="text-center py-2 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:border-emerald-500 transition-colors"
               >
                 Se connecter
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                href="/auth/register"
+                onClick={() => setIsOpen(false)}
                 className="text-center py-2 text-sm font-semibold text-white gradient-emerald rounded-xl"
               >
                 Commencer gratuitement
-              </a>
+              </Link>
             </div>
           </div>
         )}
