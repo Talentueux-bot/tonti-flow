@@ -1,8 +1,30 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Users, Calendar, TrendingUp, Search, Filter } from "lucide-react";
+import { Plus, Users, Calendar, TrendingUp, Search, Filter, Trash2 } from "lucide-react";
 
-const groups = [
+type Group = {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  members: number;
+  maxMembers: number;
+  amount: string;
+  frequency: string;
+  progress: number;
+  nextDate: string;
+  beneficiary: string;
+  round: string;
+  status: string;
+  myTurn: boolean;
+  avatars: string[];
+  createdAt?: string;
+};
+
+const defaultGroups: Group[] = [
   {
     id: "1",
     name: "Famille Diallo",
@@ -90,13 +112,42 @@ const groups = [
 ];
 
 export default function GroupsPage() {
+  const [groups, setGroups] = useState<Group[]>(defaultGroups);
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("tontiflow_groups");
+    if (saved) {
+      const parsed: Group[] = JSON.parse(saved);
+      setGroups([...parsed, ...defaultGroups]);
+    }
+  }, []);
+
+  const handleDelete = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const saved: Group[] = JSON.parse(localStorage.getItem("tontiflow_groups") || "[]");
+    const updated = saved.filter((g) => g.id !== id);
+    localStorage.setItem("tontiflow_groups", JSON.stringify(updated));
+    setGroups([...updated, ...defaultGroups]);
+  };
+
+  const filtered = groups.filter((g) =>
+    g.name.toLowerCase().includes(search.toLowerCase()) ||
+    g.description.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const activeCount = filtered.filter((g) => g.status === "active").length;
+
   return (
     <div className="space-y-7 max-w-5xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Mes Tontines</h1>
-          <p className="text-gray-500 mt-0.5">4 groupes · 2 actifs en attente de paiement</p>
+          <p className="text-gray-500 mt-0.5">
+            {filtered.length} groupe{filtered.length > 1 ? "s" : ""} · {activeCount} actif{activeCount > 1 ? "s" : ""}
+          </p>
         </div>
         <Link
           href="/dashboard/groups/new"
@@ -113,6 +164,8 @@ export default function GroupsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher une tontine..."
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
           />
@@ -125,7 +178,7 @@ export default function GroupsPage() {
 
       {/* Cards */}
       <div className="grid sm:grid-cols-2 gap-5">
-        {groups.map((g) => (
+        {filtered.map((g) => (
           <Link
             key={g.id}
             href={`/dashboard/groups/${g.id}`}
@@ -150,11 +203,23 @@ export default function GroupsPage() {
                     <p className="text-xs text-gray-400 mt-0.5">{g.description}</p>
                   </div>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                  g.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
-                }`}>
-                  {g.status === "active" ? "Actif" : "Terminé"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                    g.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+                  }`}>
+                    {g.status === "active" ? "Actif" : "Terminé"}
+                  </span>
+                  {/* Delete button for user-created groups */}
+                  {g.createdAt && (
+                    <button
+                      onClick={(e) => handleDelete(g.id, e)}
+                      className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Stats row */}
@@ -194,7 +259,7 @@ export default function GroupsPage() {
             {/* Card footer */}
             <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-t border-gray-100">
               <div className="flex -space-x-1.5">
-                {g.avatars.map((src, i) => (
+                {g.avatars.slice(0, 3).map((src, i) => (
                   <Image
                     key={i}
                     src={src}
@@ -230,7 +295,7 @@ export default function GroupsPage() {
           href="/dashboard/groups/new"
           className="bg-white rounded-2xl border-2 border-dashed border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all duration-200 flex flex-col items-center justify-center p-10 gap-3 group min-h-[240px]"
         >
-          <div className="w-12 h-12 rounded-xl bg-emerald-100 group-hover:gradient-emerald flex items-center justify-center transition-all">
+          <div className="w-12 h-12 rounded-xl bg-emerald-100 group-hover:bg-emerald-500 flex items-center justify-center transition-all">
             <Plus className="w-6 h-6 text-emerald-600 group-hover:text-white transition-colors" />
           </div>
           <div className="text-center">
