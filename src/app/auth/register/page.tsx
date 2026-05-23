@@ -232,9 +232,9 @@ export default function RegisterPage() {
                   <input type="checkbox" id="terms" className="mt-0.5 w-4 h-4 rounded border-gray-300 text-emerald-600" />
                   <label htmlFor="terms" className="text-sm text-gray-600">
                     J&apos;accepte les{" "}
-                    <Link href="#" className="text-emerald-600 hover:underline">Conditions d&apos;utilisation</Link>{" "}
+                    <Link href="/legal/terms" className="text-emerald-600 hover:underline">Conditions d&apos;utilisation</Link>{" "}
                     et la{" "}
-                    <Link href="#" className="text-emerald-600 hover:underline">Politique de confidentialité</Link>
+                    <Link href="/legal/privacy" className="text-emerald-600 hover:underline">Politique de confidentialité</Link>
                   </label>
                 </div>
               </>
