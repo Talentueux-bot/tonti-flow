@@ -17,23 +17,62 @@ const steps = [
   { id: 3, label: "Membres" },
 ];
 
+const emojis = ["🏠", "👨‍👩‍👧‍👦", "👩‍🤝‍👩", "🤝", "💼", "🎓", "🇸🇳", "🇨🇮", "🇫🇷", "🌍"];
+
 export default function NewGroupPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [frequency, setFrequency] = useState("monthly");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Form state
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [maxMembers, setMaxMembers] = useState("");
+  const [emoji, setEmoji] = useState("🏠");
+  const [frequency, setFrequency] = useState("monthly");
+  const [startDate, setStartDate] = useState("");
+  const [rotation, setRotation] = useState("random");
+
+  const inviteLink = "https://tontiflow.app/join/ABC123";
+
   const handleCreate = () => {
     setLoading(true);
+
+    const newGroup = {
+      id: Date.now().toString(),
+      name: name || "Ma tontine",
+      emoji,
+      description: description || `Tontine ${frequencies.find(f => f.value === frequency)?.label.toLowerCase()}`,
+      members: 1,
+      maxMembers: parseInt(maxMembers) || 10,
+      amount: amount || "0",
+      frequency: frequencies.find(f => f.value === frequency)?.label || "Mensuel",
+      progress: 0,
+      nextDate: startDate ? new Date(startDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "À définir",
+      beneficiary: "Vous",
+      round: `1/${parseInt(maxMembers) || 10}`,
+      status: "active",
+      myTurn: false,
+      rotation,
+      avatars: ["https://i.pravatar.cc/32?img=47"],
+      createdAt: new Date().toISOString(),
+    };
+
+    // Save to localStorage
+    const existing = JSON.parse(localStorage.getItem("tontiflow_groups") || "[]");
+    existing.unshift(newGroup);
+    localStorage.setItem("tontiflow_groups", JSON.stringify(existing));
+
     setTimeout(() => {
       setLoading(false);
       router.push("/dashboard/groups");
-    }, 1800);
+    }, 1200);
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText("https://tontiflow.app/join/ABC123").then(() => {
+    navigator.clipboard.writeText(inviteLink).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -83,52 +122,77 @@ export default function NewGroupPage() {
 
         {step === 1 && (
           <>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
-                Informations générales
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom de la tontine</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Famille Kouyaté, Commerçantes HLM..."
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-                  />
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-600" />
+              Informations générales
+            </h2>
+            <div className="space-y-4">
+              {/* Emoji picker */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icône du groupe</label>
+                <div className="flex gap-2 flex-wrap">
+                  {emojis.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => setEmoji(e)}
+                      className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${
+                        emoji === e ? "bg-emerald-100 ring-2 ring-emerald-500" : "bg-gray-50 hover:bg-gray-100"
+                      }`}
+                    >
+                      {e}
+                    </button>
+                  ))}
                 </div>
+              </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom de la tontine</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ex: Famille Kouyaté, Commerçantes HLM..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description (optionnel)</label>
+                <textarea
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Décrivez votre groupe..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Description (optionnel)</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Décrivez votre groupe..."
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm resize-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Montant / cotisation</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        placeholder="30 000"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm pr-16"
-                      />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">FCFA</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre de membres</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Montant / cotisation</label>
+                  <div className="relative">
                     <input
                       type="number"
-                      placeholder="10"
-                      min={2}
-                      max={50}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="30 000"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm pr-16"
                     />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">FCFA</span>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre de membres</label>
+                  <input
+                    type="number"
+                    value={maxMembers}
+                    onChange={(e) => setMaxMembers(e.target.value)}
+                    placeholder="10"
+                    min={2}
+                    max={50}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  />
                 </div>
               </div>
             </div>
@@ -166,6 +230,8 @@ export default function NewGroupPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Date de début</label>
                 <input
                   type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                 />
               </div>
@@ -173,10 +239,20 @@ export default function NewGroupPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Ordre de rotation</label>
                 <div className="space-y-2">
-                  {["Tirage au sort automatique", "Ordre défini manuellement"].map((opt) => (
-                    <label key={opt} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer hover:border-emerald-400 transition-colors">
-                      <input type="radio" name="rotation" className="text-emerald-600" />
-                      <span className="text-sm text-gray-700">{opt}</span>
+                  {[
+                    { value: "random", label: "Tirage au sort automatique" },
+                    { value: "manual", label: "Ordre défini manuellement" },
+                  ].map((opt) => (
+                    <label key={opt.value} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer hover:border-emerald-400 transition-colors">
+                      <input
+                        type="radio"
+                        name="rotation"
+                        value={opt.value}
+                        checked={rotation === opt.value}
+                        onChange={() => setRotation(opt.value)}
+                        className="text-emerald-600"
+                      />
+                      <span className="text-sm text-gray-700">{opt.label}</span>
                     </label>
                   ))}
                 </div>
@@ -202,6 +278,19 @@ export default function NewGroupPage() {
               Inviter les membres
             </h2>
 
+            {/* Summary */}
+            {name && (
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3 mb-2">
+                <span className="text-2xl">{emoji}</span>
+                <div>
+                  <p className="font-semibold text-emerald-900 text-sm">{name}</p>
+                  <p className="text-xs text-emerald-600">
+                    {amount ? `${amount} FCFA` : "—"} · {frequencies.find(f => f.value === frequency)?.label} · {maxMembers || "?"} membres max
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="p-4 rounded-2xl gradient-dark text-white">
               <div className="flex items-center gap-2 mb-2">
                 <MessageCircle className="w-4 h-4 text-green-400" fill="currentColor" />
@@ -213,7 +302,7 @@ export default function NewGroupPage() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value="https://tontiflow.app/join/ABC123"
+                  value={inviteLink}
                   readOnly
                   className="flex-1 px-3 py-2 rounded-xl bg-white/10 text-white text-xs border border-white/20"
                 />
@@ -241,9 +330,9 @@ export default function NewGroupPage() {
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-              <p className="text-sm text-emerald-700">
-                <span className="font-semibold">Bon à savoir :</span> Les membres recevront une invitation WhatsApp et pourront rejoindre en un clic. Aucune installation requise.
+            <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+              <p className="text-sm text-blue-700">
+                <span className="font-semibold">Bon à savoir :</span> Vous pouvez créer la tontine maintenant et inviter les membres plus tard depuis la page du groupe.
               </p>
             </div>
           </>
@@ -262,8 +351,8 @@ export default function NewGroupPage() {
           )}
           <button
             onClick={() => step < 3 ? setStep(step + 1) : handleCreate()}
-            disabled={loading}
-            className="flex-1 py-3 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 transition-opacity disabled:opacity-60 text-sm flex items-center justify-center gap-2"
+            disabled={loading || (step === 1 && !name.trim())}
+            className="flex-1 py-3 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 transition-opacity disabled:opacity-50 text-sm flex items-center justify-center gap-2"
           >
             {loading ? (
               <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -275,6 +364,10 @@ export default function NewGroupPage() {
             )}
           </button>
         </div>
+
+        {step === 1 && !name.trim() && (
+          <p className="text-xs text-center text-gray-400">Donnez un nom à votre tontine pour continuer</p>
+        )}
       </div>
     </div>
   );
