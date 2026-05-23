@@ -136,34 +136,9 @@ export default function PaymentsPage() {
     saveMethods(updated);
   };
 
-  // ── Pay ──
-  const handlePay = () => {
-    if (!selectedMethod) return;
-    setPayLoading(true);
-    setTimeout(() => {
-      setPayLoading(false);
-      setPaySuccess(true);
-      const method = methods.find((m) => m.id === selectedMethod);
-      const newTx: Transaction = {
-        id: Date.now().toString(),
-        type: "paid",
-        label: "Cotisation payée",
-        group: "Famille Diallo",
-        method: method?.label ?? "—",
-        amount: "-30 000",
-        currency: "FCFA",
-        date: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
-        time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-        status: "completed",
-        avatar: "https://i.pravatar.cc/40?img=47",
-      };
-      setTransactions((prev) => [newTx, ...prev]);
-      setTimeout(() => {
-        setPaySuccess(false);
-        setShowPayModal(false);
-        setSelectedMethod("");
-      }, 2000);
-    }, 2000);
+  const handlePaySuccess = () => {
+    const stored = JSON.parse(localStorage.getItem("tontiflow_transactions") || "[]");
+    if (stored.length > 0) setTransactions((prev) => [stored[0], ...prev]);
   };
 
   // ── Filter transactions ──
