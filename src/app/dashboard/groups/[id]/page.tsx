@@ -125,6 +125,7 @@ export default function GroupDetailPage() {
   const [members, setMembers] = useState<{ name: string; phone: string; avatar: string; paid: boolean; order: number }[]>([]);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
 
   useEffect(() => {
     // Check localStorage first
