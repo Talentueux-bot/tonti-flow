@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Check, Zap, Star } from "lucide-react";
 
 const plans = [
@@ -15,6 +16,7 @@ const plans = [
       "Historique 3 mois",
     ],
     cta: "Commencer gratuitement",
+    href: "/auth/register",
     ctaStyle: "border border-gray-200 text-gray-800 hover:border-emerald-500 hover:text-emerald-600",
     popular: false,
   },
@@ -34,6 +36,7 @@ const plans = [
       "Support prioritaire",
     ],
     cta: "Essai gratuit 14 jours",
+    href: "/auth/register?plan=pro",
     ctaStyle: "text-white gradient-emerald shadow-lg shadow-emerald-200 hover:opacity-90",
     popular: true,
   },
@@ -53,6 +56,7 @@ const plans = [
       "Gestionnaire de compte dédié",
     ],
     cta: "Contacter l'équipe",
+    href: "/contact",
     ctaStyle: "border border-gray-200 text-gray-800 hover:border-emerald-500 hover:text-emerald-600",
     popular: false,
   },
@@ -100,35 +104,19 @@ export default function Pricing() {
                   {plan.popular && (
                     <Zap className="w-4 h-4 text-emerald-400" fill="currentColor" />
                   )}
-                  <h3
-                    className={`text-xl font-bold ${
-                      plan.popular ? "text-white" : "text-gray-900"
-                    }`}
-                  >
+                  <h3 className={`text-xl font-bold ${plan.popular ? "text-white" : "text-gray-900"}`}>
                     {plan.name}
                   </h3>
                 </div>
                 <div className="flex items-end gap-1 mt-3">
-                  <span
-                    className={`text-4xl font-bold ${
-                      plan.popular ? "text-white" : "text-gray-900"
-                    }`}
-                  >
+                  <span className={`text-4xl font-bold ${plan.popular ? "text-white" : "text-gray-900"}`}>
                     {plan.price}
                   </span>
-                  <span
-                    className={`text-sm pb-1.5 ${
-                      plan.popular ? "text-emerald-300" : "text-gray-400"
-                    }`}
-                  >
+                  <span className={`text-sm pb-1.5 ${plan.popular ? "text-emerald-300" : "text-gray-400"}`}>
                     {plan.currency}{plan.period}
                   </span>
                 </div>
-                <p
-                  className={`text-sm mt-2 ${
-                    plan.popular ? "text-emerald-200" : "text-gray-500"
-                  }`}
-                >
+                <p className={`text-sm mt-2 ${plan.popular ? "text-emerald-200" : "text-gray-500"}`}>
                   {plan.description}
                 </p>
               </div>
@@ -136,41 +124,28 @@ export default function Pricing() {
               <ul className="space-y-3 mb-8 flex-1">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
-                    <div
-                      className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                        plan.popular
-                          ? "bg-emerald-500/30"
-                          : "bg-emerald-100"
-                      }`}
-                    >
-                      <Check
-                        className={`w-3 h-3 ${
-                          plan.popular ? "text-emerald-300" : "text-emerald-600"
-                        }`}
-                      />
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                      plan.popular ? "bg-emerald-500/30" : "bg-emerald-100"
+                    }`}>
+                      <Check className={`w-3 h-3 ${plan.popular ? "text-emerald-300" : "text-emerald-600"}`} />
                     </div>
-                    <span
-                      className={`text-sm ${
-                        plan.popular ? "text-emerald-100" : "text-gray-600"
-                      }`}
-                    >
+                    <span className={`text-sm ${plan.popular ? "text-emerald-100" : "text-gray-600"}`}>
                       {feature}
                     </span>
                   </li>
                 ))}
               </ul>
 
-              <a
-                href="#"
+              <Link
+                href={plan.href}
                 className={`w-full py-3 rounded-xl text-sm font-semibold text-center transition-all ${plan.ctaStyle}`}
               >
                 {plan.cta}
-              </a>
+              </Link>
             </div>
           ))}
         </div>
 
-        {/* Note */}
         <p className="text-center text-sm text-gray-400 mt-10">
           Les commissions de transaction (100–500 FCFA) s&apos;appliquent uniquement sur les paiements Mobile Money.
           <br />
