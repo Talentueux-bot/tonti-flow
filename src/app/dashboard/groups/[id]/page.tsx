@@ -9,6 +9,7 @@ import {
   CheckCircle, Clock, Share2, Settings, Plus, Copy, Check,
   Pencil, Save, X,
 } from "lucide-react";
+import PaymentModal from "@/components/dashboard/PaymentModal";
 
 type Group = {
   id: string;
