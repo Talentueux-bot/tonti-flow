@@ -62,7 +62,7 @@ export default function FAQ() {
           </h2>
           <p className="mt-4 text-gray-500 text-lg">
             Vous ne trouvez pas la réponse ?{" "}
-            <a href="#" className="text-emerald-600 font-medium hover:underline">
+            <a href="/contact" className="text-emerald-600 font-medium hover:underline">
               Contactez-nous
             </a>
           </p>
