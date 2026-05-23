@@ -85,9 +85,6 @@ export default function PaymentsPage() {
 
   // Pay modal
   const [showPayModal, setShowPayModal] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<string>("");
-  const [payLoading, setPayLoading] = useState(false);
-  const [paySuccess, setPaySuccess] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("tontiflow_payment_methods");
