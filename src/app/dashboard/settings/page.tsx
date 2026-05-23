@@ -67,6 +67,19 @@ const sections = [
 ];
 
 export default function SettingsPage() {
+  const [methods, setMethods] = useState<PaymentMethod[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("tontiflow_payment_methods");
+    if (stored) setMethods(JSON.parse(stored));
+  }, []);
+
+  const setDefault = (id: string) => {
+    const updated = methods.map((m) => ({ ...m, isDefault: m.id === id }));
+    setMethods(updated);
+    localStorage.setItem("tontiflow_payment_methods", JSON.stringify(updated));
+  };
+
   return (
     <div className="space-y-7 max-w-2xl">
       <div>
