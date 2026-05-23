@@ -18,8 +18,26 @@ const steps = [
 ];
 
 export default function NewGroupPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [frequency, setFrequency] = useState("monthly");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCreate = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      router.push("/dashboard/groups");
+    }, 1800);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText("https://tontiflow.app/join/ABC123").then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <div className="max-w-2xl space-y-6">
