@@ -1,17 +1,38 @@
+import Link from "next/link";
 import { Zap } from "lucide-react";
 
-const links = {
-  Produit: ["Fonctionnalités", "Tarifs", "Sécurité", "Nouveautés"],
-  Ressources: ["Blog", "Documentation", "Statut", "API"],
-  Entreprise: ["À propos", "Carrières", "Presse", "Contact"],
-  Légal: ["CGU", "Confidentialité", "Cookies", "Mentions légales"],
+const links: Record<string, { label: string; href: string }[]> = {
+  Produit: [
+    { label: "Fonctionnalités", href: "/#features" },
+    { label: "Tarifs", href: "/#pricing" },
+    { label: "Sécurité", href: "/legal/security" },
+    { label: "Nouveautés", href: "/blog" },
+  ],
+  Ressources: [
+    { label: "Blog", href: "/blog" },
+    { label: "Documentation", href: "/docs" },
+    { label: "Statut", href: "/status" },
+    { label: "API", href: "/docs/api" },
+  ],
+  Entreprise: [
+    { label: "À propos", href: "/about" },
+    { label: "Carrières", href: "/careers" },
+    { label: "Presse", href: "/press" },
+    { label: "Contact", href: "/contact" },
+  ],
+  Légal: [
+    { label: "CGU", href: "/legal/terms" },
+    { label: "Confidentialité", href: "/legal/privacy" },
+    { label: "Cookies", href: "/legal/cookies" },
+    { label: "Mentions légales", href: "/legal/mentions" },
+  ],
 };
 
 const socials = [
-  { label: "X", href: "#" },
-  { label: "IG", href: "#" },
-  { label: "FB", href: "#" },
-  { label: "in", href: "#" },
+  { label: "X", href: "https://twitter.com" },
+  { label: "IG", href: "https://instagram.com" },
+  { label: "FB", href: "https://facebook.com" },
+  { label: "in", href: "https://linkedin.com" },
 ];
 
 export default function Footer() {
@@ -28,14 +49,14 @@ export default function Footer() {
             Inscription gratuite en 2 minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="#"
+            <Link
+              href="/auth/register"
               className="px-8 py-4 rounded-xl font-semibold text-emerald-700 bg-white hover:bg-emerald-50 transition-colors shadow-lg"
             >
               Créer mon compte gratuit
-            </a>
+            </Link>
             <a
-              href="#"
+              href="#how-it-works"
               className="px-8 py-4 rounded-xl font-semibold text-white border border-white/30 hover:bg-white/10 transition-colors"
             >
               Voir la démo
@@ -49,14 +70,14 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1 space-y-4">
-            <a href="#" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg gradient-emerald flex items-center justify-center">
                 <Zap className="w-4 h-4 text-white" fill="white" />
               </div>
               <span className="text-xl font-bold text-white">
                 Tonti<span className="text-emerald-400">Flow</span>
               </span>
-            </a>
+            </Link>
             <p className="text-sm leading-relaxed">
               La plateforme de tontine africaine, moderne, automatisée et
               sécurisée.
@@ -67,6 +88,8 @@ export default function Footer() {
                 <a
                   key={label}
                   href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={label}
                   className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-xs font-bold hover:bg-emerald-700 hover:text-white transition-colors"
                 >
@@ -84,13 +107,13 @@ export default function Footer() {
               </h4>
               <ul className="space-y-2">
                 {items.map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
                       className="text-sm hover:text-emerald-400 transition-colors"
                     >
-                      {item}
-                    </a>
+                      {item.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
