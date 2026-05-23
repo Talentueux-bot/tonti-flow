@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import {
   CheckCircle, Clock, ArrowUpRight, ArrowDownLeft, CreditCard,
-  Filter, Search, Download, Plus, Trash2, X, Check, Smartphone,
-  Wallet, ChevronRight,
+  Filter, Search, Download, Plus, Trash2, X, Check,
+  Wallet,
 } from "lucide-react";
 import Image from "next/image";
+import PaymentModal from "@/components/dashboard/PaymentModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
