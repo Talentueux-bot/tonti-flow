@@ -1,0 +1,141 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Zap,
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  User,
+  Settings,
+  Bell,
+  LogOut,
+  Menu,
+  X,
+  ChevronRight,
+} from "lucide-react";
+import Image from "next/image";
+
+const navItems = [
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard/groups", icon: Users, label: "Mes Tontines" },
+  { href: "/dashboard/payments", icon: CreditCard, label: "Paiements" },
+  { href: "/dashboard/profile", icon: User, label: "Profil" },
+  { href: "/dashboard/settings", icon: Settings, label: "Paramètres" },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const NavContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="px-4 py-5 border-b border-gray-100">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg gradient-emerald flex items-center justify-center">
+            <Zap className="w-4 h-4 text-white" fill="white" />
+          </div>
+          <span className="text-lg font-bold text-gray-900">
+            Tonti<span className="text-emerald-600">Flow</span>
+          </span>
+        </Link>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-1">
+        {navItems.map(({ href, icon: Icon, label }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
+                active
+                  ? "gradient-emerald text-white shadow-md shadow-emerald-200"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              }`}
+            >
+              <Icon className={`w-4.5 h-4.5 ${active ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`} />
+              {label}
+              {active && <ChevronRight className="w-4 h-4 ml-auto opacity-70" />}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Notifications quick badge */}
+      <div className="px-3 pb-3">
+        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
+          <Bell className="w-4 h-4 text-gray-400" />
+          Notifications
+          <span className="ml-auto w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">3</span>
+        </button>
+      </div>
+
+      {/* User card */}
+      <div className="border-t border-gray-100 p-3">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
+          <Image
+            src="https://i.pravatar.cc/40?img=47"
+            alt="Profile"
+            width={36}
+            height={36}
+            className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-100"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">Aminata K.</p>
+            <p className="text-xs text-gray-400 truncate">aminata@example.com</p>
+          </div>
+          <LogOut className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors shrink-0" />
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-60 flex-col h-screen sticky top-0 bg-white border-r border-gray-100 shrink-0">
+        <NavContent />
+      </aside>
+
+      {/* Mobile top bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg gradient-emerald flex items-center justify-center">
+            <Zap className="w-3.5 h-3.5 text-white" fill="white" />
+          </div>
+          <span className="text-lg font-bold text-gray-900">
+            Tonti<span className="text-emerald-600">Flow</span>
+          </span>
+        </Link>
+        <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-gray-100">
+          <Menu className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
+
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="relative w-64 bg-white h-full shadow-2xl">
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+            <NavContent />
+          </aside>
+        </div>
+      )}
+    </>
+  );
+}
