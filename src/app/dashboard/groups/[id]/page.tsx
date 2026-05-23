@@ -450,7 +450,10 @@ export default function GroupDetailPage() {
               </button>
             </div>
             {members.length > 0 && (
-              <button className="w-full py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+              <button
+                onClick={() => setShowPayModal(true)}
+                className="w-full py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+              >
                 Payer ma cotisation · Wave / Orange Money
               </button>
             )}
