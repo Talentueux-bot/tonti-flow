@@ -433,100 +433,14 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════
-          MODAL — Pay now
-      ══════════════════════════════════════════════════════════════ */}
-      {showPayModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl">
-            {paySuccess ? (
-              <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-                  <Check className="w-8 h-8 text-emerald-600" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-1">Paiement effectué !</h2>
-                <p className="text-gray-500 text-sm">30 000 FCFA · Famille Diallo</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">Payer ma cotisation</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">30 000 FCFA · Famille Diallo</p>
-                  </div>
-                  <button onClick={() => setShowPayModal(false)} className="p-2 rounded-xl hover:bg-gray-100">
-                    <X className="w-5 h-5 text-gray-500" />
-                  </button>
-                </div>
-
-                <div className="p-6 space-y-4">
-                  {methods.length === 0 ? (
-                    <div className="text-center py-6">
-                      <Smartphone className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                      <p className="text-sm font-medium text-gray-700 mb-1">Aucun moyen de paiement</p>
-                      <p className="text-xs text-gray-400 mb-4">Ajoutez Wave, Orange Money ou une carte pour payer.</p>
-                      <button
-                        onClick={() => { setShowPayModal(false); setShowAddModal(true); }}
-                        className="px-5 py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold"
-                      >
-                        Ajouter un moyen de paiement
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm font-medium text-gray-700">Choisissez le moyen de paiement</p>
-                      <div className="space-y-2">
-                        {methods.map((m) => {
-                          const p = getPlatform(m.type);
-                          return (
-                            <button
-                              key={m.id}
-                              onClick={() => setSelectedMethod(m.id)}
-                              className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                                selectedMethod === m.id ? "border-emerald-500 bg-emerald-50" : "border-gray-100 hover:border-gray-300"
-                              }`}
-                            >
-                              <div className={`w-9 h-9 rounded-xl ${p.bg} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
-                                {p.logo}
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-semibold text-gray-900">{m.label}</p>
-                                <p className="text-xs text-gray-400">{maskNumber(m.number, m.type)}</p>
-                              </div>
-                              {m.isDefault && <span className="text-[10px] font-bold text-emerald-600">Défaut</span>}
-                              {selectedMethod === m.id && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Montant à payer</span>
-                        <span className="font-bold text-gray-900">30 000 FCFA</span>
-                      </div>
-
-                      <button
-                        onClick={handlePay}
-                        disabled={!selectedMethod || payLoading}
-                        className="w-full py-3.5 rounded-xl gradient-emerald text-white font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
-                      >
-                        {payLoading ? (
-                          <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            Confirmer le paiement
-                            <ChevronRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <PaymentModal
+        open={showPayModal}
+        onClose={() => setShowPayModal(false)}
+        amount="30 000"
+        currency="FCFA"
+        groupName="Famille Diallo"
+        onSuccess={handlePaySuccess}
+      />
     </div>
   );
 }
