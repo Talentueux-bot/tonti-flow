@@ -59,12 +59,12 @@ export default function Merchants() {
               Marchandes, artisans, vendeurs de rue — TontiFlow est fait pour vous.
             </p>
           </div>
-          <a
-            href="#"
+          <Link
+            href="/auth/register"
             className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-emerald-700 border border-emerald-200 hover:bg-emerald-50 transition-colors"
           >
             Rejoindre la communauté →
-          </a>
+          </Link>
         </div>
 
         {/* Cards grid */}
