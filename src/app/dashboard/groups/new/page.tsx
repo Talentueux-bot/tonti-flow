@@ -217,8 +217,12 @@ export default function NewGroupPage() {
                   readOnly
                   className="flex-1 px-3 py-2 rounded-xl bg-white/10 text-white text-xs border border-white/20"
                 />
-                <button className="px-3 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-xs font-semibold transition-colors">
-                  Copier
+                <button
+                  onClick={handleCopy}
+                  className="px-3 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-xs font-semibold transition-colors flex items-center gap-1.5"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? "Copié !" : "Copier"}
                 </button>
               </div>
             </div>
