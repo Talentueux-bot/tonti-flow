@@ -103,7 +103,7 @@ export default function HowItWorks() {
 
         {/* CTA */}
         <div className="mt-16 text-center">
-          <a
+          <Link
             href="/auth/register"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 transition-opacity shadow-lg shadow-emerald-200 text-base"
           >
