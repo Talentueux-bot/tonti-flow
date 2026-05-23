@@ -25,6 +25,7 @@ const perks = [
 ];
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -33,7 +34,10 @@ export default function RegisterPage() {
     e.preventDefault();
     if (step === 1) { setStep(2); return; }
     setLoading(true);
-    setTimeout(() => setLoading(false), 1500);
+    setTimeout(() => {
+      setLoading(false);
+      router.push("/dashboard");
+    }, 1500);
   };
 
   return (
