@@ -261,11 +261,18 @@ export default function NewGroupPage() {
             </button>
           )}
           <button
-            onClick={() => step < 3 ? setStep(step + 1) : null}
-            className="flex-1 py-3 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 transition-opacity text-sm flex items-center justify-center gap-2"
+            onClick={() => step < 3 ? setStep(step + 1) : handleCreate()}
+            disabled={loading}
+            className="flex-1 py-3 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 transition-opacity disabled:opacity-60 text-sm flex items-center justify-center gap-2"
           >
-            {step === 3 ? "Créer la tontine 🚀" : "Continuer"}
-            {step < 3 && <ArrowRight className="w-4 h-4" />}
+            {loading ? (
+              <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                {step === 3 ? "Créer la tontine 🚀" : "Continuer"}
+                {step < 3 && <ArrowRight className="w-4 h-4" />}
+              </>
+            )}
           </button>
         </div>
       </div>
