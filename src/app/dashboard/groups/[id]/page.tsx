@@ -505,6 +505,19 @@ export default function GroupDetailPage() {
           </div>
         </div>
       </div>
+
+      <PaymentModal
+        open={showPayModal}
+        onClose={() => setShowPayModal(false)}
+        amount={group.amount}
+        currency="FCFA"
+        groupName={group.name}
+        onSuccess={() => {
+          // Update progress locally
+          const updated = members.map((m, i) => i === 0 ? { ...m, paid: true } : m);
+          setMembers(updated);
+        }}
+      />
     </div>
   );
 }
