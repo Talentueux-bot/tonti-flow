@@ -1,7 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { Bell, Shield, Smartphone, Globe, Trash2, ChevronRight, MessageCircle, Mail, Moon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bell, Shield, Smartphone, Globe, Trash2, ChevronRight, MessageCircle, Moon, Plus } from "lucide-react";
+import Link from "next/link";
+
+type PaymentMethod = {
+  id: string;
+  type: string;
+  label: string;
+  number: string;
+  isDefault: boolean;
+};
+
+const PLATFORM_BG: Record<string, string> = {
+  wave: "bg-blue-500",
+  orange: "bg-orange-500",
+  mtn: "bg-yellow-500",
+  free: "bg-red-500",
+  visa: "bg-indigo-600",
+  mastercard: "bg-rose-600",
+};
+
+const PLATFORM_LOGO: Record<string, string> = {
+  wave: "W", orange: "O", mtn: "M", free: "F", visa: "V", mastercard: "MC",
+};
 
 function Toggle({ defaultOn = false }: { defaultOn?: boolean }) {
   const [on, setOn] = useState(defaultOn);
