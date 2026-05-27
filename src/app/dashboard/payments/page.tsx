@@ -197,7 +197,7 @@ export default function PaymentsPage() {
           </div>
         </div>
         <button
-          onClick={() => { setShowPayModal(true); setPaySuccess(false); }}
+          onClick={() => setShowPayModal(true)}
           className="shrink-0 px-5 py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity shadow-md shadow-emerald-200"
         >
           Payer maintenant
