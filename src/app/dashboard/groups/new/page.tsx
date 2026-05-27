@@ -25,6 +25,16 @@ export default function NewGroupPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [allowed, setAllowed] = useState(true);
+  const [planId, setPlanId] = useState<"free"|"pro"|"diaspora">("free");
+  const [userCount, setUserCount] = useState(0);
+
+  useEffect(() => {
+    const ok = canCreateGroup();
+    setAllowed(ok);
+    setPlanId(getPlan());
+    setUserCount(getUserGroupCount());
+  }, []);
 
   // Form state
   const [name, setName] = useState("");
