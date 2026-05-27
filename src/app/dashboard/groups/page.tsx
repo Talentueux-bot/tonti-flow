@@ -115,6 +115,8 @@ const defaultGroups: Group[] = [
 export default function GroupsPage() {
   const [groups, setGroups] = useState<Group[]>(defaultGroups);
   const [search, setSearch] = useState("");
+  const [planId, setPlanId] = useState<"free"|"pro"|"diaspora">("free");
+  const [userGroupCount, setUserGroupCount] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem("tontiflow_groups");
@@ -122,6 +124,8 @@ export default function GroupsPage() {
       const parsed: Group[] = JSON.parse(saved);
       setGroups([...parsed, ...defaultGroups]);
     }
+    setPlanId(getPlan());
+    setUserGroupCount(getUserGroupCount());
   }, []);
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
