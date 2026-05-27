@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Users, Calendar, TrendingUp, Search, Filter, Trash2 } from "lucide-react";
+import { Plus, Users, Calendar, TrendingUp, Search, Filter, Trash2, Lock, Zap } from "lucide-react";
+import { getPlan, getUserGroupCount, PLANS } from "@/lib/plans";
 
 type Group = {
   id: string;
