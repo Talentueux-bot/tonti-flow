@@ -89,6 +89,50 @@ export default function NewGroupPage() {
     });
   };
 
+  // Écran de blocage si limite atteinte
+  if (!allowed) {
+    const max = PLANS[planId].maxGroups;
+    return (
+      <div className="max-w-md mx-auto text-center py-16 space-y-6">
+        <div className="w-20 h-20 rounded-3xl bg-orange-100 flex items-center justify-center mx-auto">
+          <Lock className="w-10 h-10 text-orange-500" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Limite atteinte</h1>
+          <p className="text-gray-500">
+            Vous avez atteint la limite de <strong>{max} groupes</strong> du plan Gratuit.
+            <br />
+            Passez au plan <strong>Pro</strong> pour créer des groupes illimités.
+          </p>
+        </div>
+        <div className="bg-white border border-gray-100 rounded-2xl p-6 text-left space-y-3">
+          <p className="text-sm font-semibold text-gray-700">Plan Pro — 5 000 FCFA/mois</p>
+          {["Groupes illimités","Membres illimités","Rappels WhatsApp illimités","Rapports & statistiques","Support prioritaire"].map(f => (
+            <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
+              <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+              {f}
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col gap-3">
+          <Link
+            href="/auth/register?plan=pro"
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl gradient-emerald text-white font-semibold hover:opacity-90 transition-opacity shadow-md shadow-emerald-200"
+          >
+            <Zap className="w-4 h-4" fill="white" />
+            Passer au Pro — 5 000 FCFA/mois
+          </Link>
+          <Link
+            href="/dashboard/groups"
+            className="w-full py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors text-center"
+          >
+            ← Retour à mes tontines ({userCount}/{max})
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl space-y-6">
       {/* Header */}
