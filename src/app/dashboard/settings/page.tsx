@@ -69,10 +69,16 @@ const sections = [
 
 export default function SettingsPage() {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
+  const [planId, setPlanId] = useState<"free"|"pro"|"diaspora">("free");
+  const [reminders, setReminders] = useState({ used: 0, max: 10 });
+  const [groupCount, setGroupCount] = useState(0);
 
   useEffect(() => {
     const stored = localStorage.getItem("tontiflow_payment_methods");
     if (stored) setMethods(JSON.parse(stored));
+    setPlanId(getPlan());
+    setReminders(getReminderUsage());
+    setGroupCount(getUserGroupCount());
   }, []);
 
   const setDefault = (id: string) => {
