@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Shield, Smartphone, Globe, Trash2, ChevronRight, MessageCircle, Moon, Plus } from "lucide-react";
+import { Bell, Shield, Smartphone, Globe, Trash2, ChevronRight, MessageCircle, Moon, Plus, Zap, Lock } from "lucide-react";
 import Link from "next/link";
+import { getPlan, getReminderUsage, getUserGroupCount, PLANS } from "@/lib/plans";
 
 type PaymentMethod = {
   id: string;
