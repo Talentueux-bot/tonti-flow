@@ -94,6 +94,72 @@ export default function SettingsPage() {
         <p className="text-gray-500 mt-0.5">Personnalisez votre expérience TontiFlow</p>
       </div>
 
+      {/* Carte plan actuel */}
+      <div className={`rounded-2xl p-5 border ${planId === "free" ? "bg-gray-50 border-gray-200" : "gradient-dark border-0"}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${planId === "free" ? "bg-white border border-gray-200" : "bg-white/10"}`}>
+              <Zap className={`w-5 h-5 ${planId === "free" ? "text-gray-500" : "text-emerald-400"}`} fill={planId !== "free" ? "currentColor" : "none"} />
+            </div>
+            <div>
+              <p className={`text-sm font-bold ${planId === "free" ? "text-gray-900" : "text-white"}`}>
+                Plan {PLANS[planId].name}
+              </p>
+              <p className={`text-xs mt-0.5 ${planId === "free" ? "text-gray-500" : "text-emerald-300"}`}>
+                {PLANS[planId].price}
+              </p>
+            </div>
+          </div>
+          {planId === "free" && (
+            <Link href="/auth/register?plan=pro" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl gradient-emerald text-white text-xs font-semibold hover:opacity-90 transition-opacity">
+              <Zap className="w-3.5 h-3.5" fill="white" />
+              Passer au Pro
+            </Link>
+          )}
+        </div>
+
+        {/* Quotas plan gratuit */}
+        {planId === "free" && (
+          <div className="mt-4 grid sm:grid-cols-2 gap-3">
+            {/* Groupes */}
+            <div className="bg-white rounded-xl p-3 border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-gray-600">Groupes créés</span>
+                {groupCount >= PLANS.free.maxGroups && <Lock className="w-3.5 h-3.5 text-orange-500" />}
+              </div>
+              <div className="flex items-end justify-between mb-1.5">
+                <span className="text-lg font-bold text-gray-900">{groupCount}</span>
+                <span className="text-xs text-gray-400">/ {PLANS.free.maxGroups} max</span>
+              </div>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${groupCount >= PLANS.free.maxGroups ? "bg-orange-400" : "bg-emerald-500"}`}
+                  style={{ width: `${Math.min((groupCount / PLANS.free.maxGroups) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Rappels */}
+            <div className="bg-white rounded-xl p-3 border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-gray-600">Rappels WhatsApp</span>
+                {reminders.used >= reminders.max && <Lock className="w-3.5 h-3.5 text-orange-500" />}
+              </div>
+              <div className="flex items-end justify-between mb-1.5">
+                <span className="text-lg font-bold text-gray-900">{reminders.used}</span>
+                <span className="text-xs text-gray-400">/ {reminders.max} ce mois</span>
+              </div>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${reminders.used >= reminders.max ? "bg-orange-400" : "bg-emerald-500"}`}
+                  style={{ width: `${Math.min((reminders.used / reminders.max) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Notification + Appearance toggles */}
       {sections.map((section) => (
         <div key={section.title} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
