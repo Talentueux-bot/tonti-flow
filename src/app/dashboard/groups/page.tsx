@@ -143,9 +143,48 @@ export default function GroupsPage() {
   );
 
   const activeCount = filtered.filter((g) => g.status === "active").length;
+  const planLimits = PLANS[planId];
+  const maxGroups = planLimits.maxGroups;
+  const atLimit = maxGroups !== -1 && userGroupCount >= maxGroups;
 
   return (
     <div className="space-y-7 max-w-5xl">
+      {/* Limite plan gratuit */}
+      {planId === "free" && (
+        <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl border ${
+          atLimit
+            ? "bg-orange-50 border-orange-200"
+            : "bg-emerald-50 border-emerald-100"
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+              atLimit ? "bg-orange-100" : "bg-emerald-100"
+            }`}>
+              {atLimit ? <Lock className="w-4 h-4 text-orange-600" /> : <Zap className="w-4 h-4 text-emerald-600" />}
+            </div>
+            <div>
+              <p className={`text-sm font-semibold ${atLimit ? "text-orange-800" : "text-emerald-900"}`}>
+                Plan Gratuit — {userGroupCount}/{maxGroups} groupes utilisés
+              </p>
+              <p className={`text-xs mt-0.5 ${atLimit ? "text-orange-600" : "text-emerald-600"}`}>
+                {atLimit
+                  ? "Limite atteinte. Passez au plan Pro pour créer des groupes illimités."
+                  : `Il vous reste ${maxGroups - userGroupCount} groupe${maxGroups - userGroupCount > 1 ? "s" : ""} sur votre plan gratuit · 10 rappels WhatsApp/mois`}
+              </p>
+            </div>
+          </div>
+          {atLimit && (
+            <Link
+              href="/auth/register?plan=pro"
+              className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
+            >
+              <Zap className="w-3.5 h-3.5" fill="white" />
+              Passer au Pro — 5 000 FCFA/mois
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -154,13 +193,24 @@ export default function GroupsPage() {
             {filtered.length} groupe{filtered.length > 1 ? "s" : ""} · {activeCount} actif{activeCount > 1 ? "s" : ""}
           </p>
         </div>
-        <Link
-          href="/dashboard/groups/new"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 text-sm shadow-md shadow-emerald-200"
-        >
-          <Plus className="w-4 h-4" />
-          Nouvelle tontine
-        </Link>
+        {atLimit ? (
+          <button
+            disabled
+            title="Limite de 3 groupes atteinte — passez au plan Pro"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-gray-400 bg-gray-100 text-sm cursor-not-allowed"
+          >
+            <Lock className="w-4 h-4" />
+            Nouvelle tontine
+          </button>
+        ) : (
+          <Link
+            href="/dashboard/groups/new"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 text-sm shadow-md shadow-emerald-200"
+          >
+            <Plus className="w-4 h-4" />
+            Nouvelle tontine
+          </Link>
+        )}
       </div>
 
       {/* Search + Filter */}
