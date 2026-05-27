@@ -5,19 +5,19 @@ const links: Record<string, { label: string; href: string }[]> = {
   Produit: [
     { label: "Fonctionnalités", href: "/#features" },
     { label: "Tarifs", href: "/#pricing" },
-    { label: "Sécurité", href: "/legal/security" },
-    { label: "Nouveautés", href: "/blog" },
+    { label: "Comment ça marche", href: "/#how-it-works" },
+    { label: "FAQ", href: "/#faq" },
   ],
   Ressources: [
-    { label: "Blog", href: "/blog" },
-    { label: "Documentation", href: "/docs" },
-    { label: "Statut", href: "/status" },
-    { label: "API", href: "/docs/api" },
+    { label: "Créer une tontine", href: "/auth/register" },
+    { label: "Se connecter", href: "/auth/login" },
+    { label: "Contact & Support", href: "/contact" },
+    { label: "Diaspora / Transferts", href: "/auth/register?plan=diaspora" },
   ],
   Entreprise: [
-    { label: "À propos", href: "/about" },
-    { label: "Carrières", href: "/careers" },
-    { label: "Presse", href: "/press" },
+    { label: "À propos", href: "/contact" },
+    { label: "Partenariats", href: "/contact" },
+    { label: "Presse", href: "/contact" },
     { label: "Contact", href: "/contact" },
   ],
   Légal: [
