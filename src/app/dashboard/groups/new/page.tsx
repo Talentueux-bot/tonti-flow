@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Users, Calendar, DollarSign, MessageCircle, Check, Copy } from "lucide-react";
+import { ArrowLeft, ArrowRight, Users, Calendar, DollarSign, MessageCircle, Check, Copy, Lock, Zap } from "lucide-react";
+import { canCreateGroup, getPlan, getUserGroupCount, PLANS } from "@/lib/plans";
 
 const frequencies = [
   { value: "weekly", label: "Hebdomadaire" },
