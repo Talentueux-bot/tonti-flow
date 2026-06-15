@@ -4,6 +4,7 @@ import {
   TrendingUp, Users, CreditCard, ArrowUpRight,
   Plus, Bell, CheckCircle, Clock, AlertCircle,
 } from "lucide-react";
+import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 
 const statCards = [
   {
@@ -119,14 +120,7 @@ export default function DashboardPage() {
     <div className="space-y-8 max-w-6xl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Bonjour, Aminata 👋
-          </h1>
-          <p className="text-gray-500 mt-0.5">
-            Vendredi 23 mai 2026 · Voici votre tableau de bord
-          </p>
-        </div>
+        <DashboardGreeting />
         <Link
           href="/dashboard/groups/new"
           className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 transition-opacity text-sm shadow-md shadow-emerald-200"

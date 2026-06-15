@@ -1,5 +1,7 @@
-import Image from "next/image";
+"use client";
+
 import { Camera, Star, TrendingUp, Shield, CheckCircle, Award } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const badges = [
   { icon: "🏆", label: "Payeur régulier", color: "bg-amber-50 border-amber-200 text-amber-700" },
@@ -15,6 +17,11 @@ const stats = [
 ];
 
 export default function ProfilePage() {
+  const { profile } = useAuth();
+  const initials =
+    (profile.firstName?.[0] ?? "") + (profile.lastName?.[0] ?? "") ||
+    profile.fullName.slice(0, 2).toUpperCase();
+
   return (
     <div className="space-y-7 max-w-3xl">
       <div>
@@ -30,13 +37,9 @@ export default function ProfilePage() {
         <div className="px-6 pb-6">
           {/* Avatar */}
           <div className="relative inline-block -mt-10 mb-4">
-            <Image
-              src="https://i.pravatar.cc/80?img=47"
-              alt="Profile"
-              width={80}
-              height={80}
-              className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white"
-            />
+            <div className="w-20 h-20 rounded-2xl gradient-emerald flex items-center justify-center text-white text-2xl font-bold ring-4 ring-white uppercase">
+              {initials}
+            </div>
             <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full gradient-emerald flex items-center justify-center shadow-md">
               <Camera className="w-3.5 h-3.5 text-white" />
             </button>
@@ -44,9 +47,12 @@ export default function ProfilePage() {
 
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Aminata Kouyaté</h2>
-              <p className="text-gray-500 text-sm">aminata.kouyate@example.com</p>
-              <p className="text-gray-400 text-sm">+221 77 123 45 67 · 🇸🇳 Dakar, Sénégal</p>
+              <h2 className="text-xl font-bold text-gray-900">{profile.fullName}</h2>
+              <p className="text-gray-500 text-sm">{profile.email}</p>
+              <p className="text-gray-400 text-sm">
+                {profile.phone || "Téléphone non renseigné"}
+                {profile.country ? ` · ${profile.country}` : ""}
+              </p>
 
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mt-3">
@@ -128,8 +134,8 @@ export default function ProfilePage() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           {[
-            { label: "Prénom", value: "Aminata" },
-            { label: "Nom", value: "Kouyaté" },
+            { label: "Prénom", value: profile.firstName },
+            { label: "Nom", value: profile.lastName },
           ].map((f) => (
             <div key={f.label}>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}</label>
@@ -146,7 +152,7 @@ export default function ProfilePage() {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
           <input
             type="email"
-            defaultValue="aminata.kouyate@example.com"
+            defaultValue={profile.email}
             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
           />
         </div>
@@ -155,7 +161,7 @@ export default function ProfilePage() {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Téléphone</label>
           <input
             type="tel"
-            defaultValue="+221 77 123 45 67"
+            defaultValue={profile.phone}
             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
           />
         </div>

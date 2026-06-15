@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { Eye, EyeOff, Zap, ArrowRight, MessageCircle, Check } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const countries = [
   { code: "SN", name: "Sénégal", dial: "+221" },
@@ -30,14 +32,87 @@ export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Champs du formulaire
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [dial, setDial] = useState(countries[0].dial);
+  const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState(countries[0].code);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (step === 1) { setStep(2); return; }
+
+    // Étape 1 : validation des informations de base
+    if (step === 1) {
+      if (!firstName.trim() || !lastName.trim()) {
+        toast.error("Veuillez renseigner votre prénom et votre nom.");
+        return;
+      }
+      if (!email.trim()) {
+        toast.error("Veuillez renseigner votre email.");
+        return;
+      }
+      setStep(2);
+      return;
+    }
+
+    // Étape 2 : validation du mot de passe
+    if (password.length < 8) {
+      toast.error("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Les deux mots de passe ne correspondent pas.");
+      return;
+    }
+    if (!acceptTerms) {
+      toast.error("Vous devez accepter les conditions d'utilisation.");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const fullPhone = phone.trim() ? `${dial}${phone.replace(/\s+/g, "")}` : null;
+
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            full_name: `${firstName.trim()} ${lastName.trim()}`,
+            phone: fullPhone,
+            country,
+          },
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      // Si la confirmation par email est activée dans Supabase, aucune session
+      // n'est créée tant que l'utilisateur n'a pas cliqué sur le lien reçu.
+      if (data.session) {
+        toast.success("Compte créé avec succès 🎉");
+        router.push("/dashboard");
+      } else {
+        toast.success(
+          "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse."
+        );
+        router.push("/auth/login");
+      }
+    } catch {
+      toast.error("Une erreur est survenue. Réessayez.");
+    } finally {
       setLoading(false);
-      router.push("/dashboard");
-    }, 1500);
+    }
   };
 
   return (
@@ -118,7 +193,11 @@ export default function RegisterPage() {
           </p>
 
           {step === 1 && (
-            <button className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 hover:border-green-400 hover:bg-green-50 transition-colors mb-6">
+            <button
+              type="button"
+              onClick={() => toast("Inscription WhatsApp bientôt disponible 🚀", { icon: "💬" })}
+              className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 hover:border-green-400 hover:bg-green-50 transition-colors mb-6"
+            >
               <div className="w-6 h-6 rounded-md bg-green-500 flex items-center justify-center">
                 <MessageCircle className="w-4 h-4 text-white" fill="white" />
               </div>
@@ -142,6 +221,9 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Prénom</label>
                     <input
                       type="text"
+                      required
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
                       placeholder="Aminata"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                     />
@@ -150,6 +232,9 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom</label>
                     <input
                       type="text"
+                      required
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
                       placeholder="Kouyaté"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                     />
@@ -160,6 +245,9 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                   <input
                     type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                   />
@@ -168,13 +256,19 @@ export default function RegisterPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Téléphone</label>
                   <div className="flex gap-2">
-                    <select className="px-3 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white">
+                    <select
+                      value={dial}
+                      onChange={(e) => setDial(e.target.value)}
+                      className="px-3 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
+                    >
                       {countries.map((c) => (
                         <option key={c.code} value={c.dial}>{c.dial} {c.code}</option>
                       ))}
                     </select>
                     <input
                       type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
                       placeholder="77 000 00 00"
                       className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                     />
@@ -183,7 +277,11 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Pays</label>
-                  <select className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white">
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
+                  >
                     {countries.map((c) => (
                       <option key={c.code} value={c.code}>{c.name}</option>
                     ))}
@@ -199,6 +297,9 @@ export default function RegisterPage() {
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="Minimum 8 caractères"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm pr-12"
                     />
@@ -212,24 +313,39 @@ export default function RegisterPage() {
                   </div>
                   {/* Password strength */}
                   <div className="flex gap-1 mt-2">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className={`h-1 flex-1 rounded-full ${i <= 2 ? "bg-emerald-500" : "bg-gray-200"}`} />
-                    ))}
+                    {[1, 2, 3, 4].map((i) => {
+                      const strength =
+                        (password.length >= 8 ? 1 : 0) +
+                        (/[A-Z]/.test(password) ? 1 : 0) +
+                        (/[0-9]/.test(password) ? 1 : 0) +
+                        (/[^A-Za-z0-9]/.test(password) ? 1 : 0);
+                      return (
+                        <div key={i} className={`h-1 flex-1 rounded-full ${i <= strength ? "bg-emerald-500" : "bg-gray-200"}`} />
+                      );
+                    })}
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">Niveau : Moyen</p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirmer le mot de passe</label>
                   <input
                     type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                   />
                 </div>
 
                 <div className="flex items-start gap-2 pt-1">
-                  <input type="checkbox" id="terms" className="mt-0.5 w-4 h-4 rounded border-gray-300 text-emerald-600" />
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-gray-300 text-emerald-600"
+                  />
                   <label htmlFor="terms" className="text-sm text-gray-600">
                     J&apos;accepte les{" "}
                     <Link href="/legal/terms" className="text-emerald-600 hover:underline">Conditions d&apos;utilisation</Link>{" "}

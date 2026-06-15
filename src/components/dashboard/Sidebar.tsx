@@ -16,7 +16,7 @@ import {
   X,
   ChevronRight,
 } from "lucide-react";
-import Image from "next/image";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -29,6 +29,11 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { profile, signOut } = useAuth();
+
+  const initials =
+    (profile.firstName?.[0] ?? "") + (profile.lastName?.[0] ?? "") ||
+    profile.fullName.slice(0, 2).toUpperCase();
 
   const NavContent = () => (
     <div className="flex flex-col h-full">
@@ -78,19 +83,22 @@ export default function Sidebar() {
 
       {/* User card */}
       <div className="border-t border-gray-100 p-3">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
-          <Image
-            src="https://i.pravatar.cc/40?img=47"
-            alt="Profile"
-            width={36}
-            height={36}
-            className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-100"
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">Aminata K.</p>
-            <p className="text-xs text-gray-400 truncate">aminata@example.com</p>
+        <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 transition-colors">
+          <div className="w-9 h-9 rounded-full gradient-emerald flex items-center justify-center text-white text-xs font-bold ring-2 ring-emerald-100 shrink-0 uppercase">
+            {initials}
           </div>
-          <LogOut className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">{profile.fullName}</p>
+            <p className="text-xs text-gray-400 truncate">{profile.email}</p>
+          </div>
+          <button
+            type="button"
+            onClick={signOut}
+            title="Se déconnecter"
+            className="p-1 rounded-lg hover:bg-red-50 shrink-0"
+          >
+            <LogOut className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors" />
+          </button>
         </div>
       </div>
     </div>

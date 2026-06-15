@@ -3,20 +3,44 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { Eye, EyeOff, Zap, ArrowRight, MessageCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password) {
+      toast.error("Veuillez renseigner votre email et votre mot de passe.");
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) {
+        toast.error(
+          error.message === "Invalid login credentials"
+            ? "Email ou mot de passe incorrect."
+            : error.message
+        );
+        return;
+      }
+      toast.success("Connexion réussie 👋");
       router.push("/dashboard");
-    }, 1500);
+    } catch {
+      toast.error("Une erreur est survenue. Réessayez.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,7 +64,11 @@ export default function LoginPage() {
           <p className="text-gray-500 mb-8">Connectez-vous à votre compte TontiFlow</p>
 
           {/* WhatsApp quick login */}
-          <button className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 hover:border-green-400 hover:bg-green-50 transition-colors mb-6">
+          <button
+            type="button"
+            onClick={() => toast("Connexion WhatsApp bientôt disponible 🚀", { icon: "💬" })}
+            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 hover:border-green-400 hover:bg-green-50 transition-colors mb-6"
+          >
             <div className="w-6 h-6 rounded-md bg-green-500 flex items-center justify-center">
               <MessageCircle className="w-4 h-4 text-white" fill="white" />
             </div>
@@ -60,6 +88,8 @@ export default function LoginPage() {
               </label>
               <input
                 type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition-all"
               />
@@ -80,6 +110,8 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm transition-all pr-12"
                 />
