@@ -3,8 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Users, Calendar, DollarSign, MessageCircle, Check, Copy, Lock, Zap } from "lucide-react";
-import { canCreateGroup, getPlan, getUserGroupCount, PLANS } from "@/lib/plans";
+import toast from "react-hot-toast";
+import { ArrowLeft, ArrowRight, Users, Calendar, DollarSign, MessageCircle, Check, Lock, Zap } from "lucide-react";
+import { PLANS } from "@/lib/plans";
+import { createGroup, countGroups, getAccountPlan } from "@/lib/db";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const frequencies = [
   { value: "weekly", label: "Hebdomadaire" },
@@ -22,18 +25,22 @@ const emojis = ["🏠", "👨‍👩‍👧‍👦", "👩‍🤝‍👩", "🤝
 
 export default function NewGroupPage() {
   const router = useRouter();
+  const { profile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [allowed, setAllowed] = useState(true);
   const [planId, setPlanId] = useState<"free"|"pro"|"diaspora">("free");
   const [userCount, setUserCount] = useState(0);
 
   useEffect(() => {
-    const ok = canCreateGroup();
-    setAllowed(ok);
-    setPlanId(getPlan());
-    setUserCount(getUserGroupCount());
+    getAccountPlan().then((plan) => {
+      setPlanId(plan);
+      countGroups().then((count) => {
+        setUserCount(count);
+        const limit = PLANS[plan].maxGroups;
+        setAllowed(limit === -1 || count < limit);
+      });
+    });
   }, []);
 
   // Form state
@@ -46,47 +53,35 @@ export default function NewGroupPage() {
   const [startDate, setStartDate] = useState("");
   const [rotation, setRotation] = useState("random");
 
-  const inviteLink = "https://tontiflow.app/join/ABC123";
+  const inviteLink = "Le lien et le code seront générés après la création";
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     setLoading(true);
-
-    const newGroup = {
-      id: Date.now().toString(),
-      name: name || "Ma tontine",
-      emoji,
-      description: description || `Tontine ${frequencies.find(f => f.value === frequency)?.label.toLowerCase()}`,
-      members: 1,
-      maxMembers: parseInt(maxMembers) || 10,
-      amount: amount || "0",
-      frequency: frequencies.find(f => f.value === frequency)?.label || "Mensuel",
-      progress: 0,
-      nextDate: startDate ? new Date(startDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "À définir",
-      beneficiary: "Vous",
-      round: `1/${parseInt(maxMembers) || 10}`,
-      status: "active",
-      myTurn: false,
-      rotation,
-      avatars: ["https://i.pravatar.cc/32?img=47"],
-      createdAt: new Date().toISOString(),
-    };
-
-    // Save to localStorage
-    const existing = JSON.parse(localStorage.getItem("tontiflow_groups") || "[]");
-    existing.unshift(newGroup);
-    localStorage.setItem("tontiflow_groups", JSON.stringify(existing));
-
-    setTimeout(() => {
+    try {
+      const planMax = PLANS[planId].maxMembers;
+      const requested = parseInt(maxMembers) || 10;
+      const cappedMembers = planMax === -1 ? requested : Math.min(requested, planMax);
+      if (planMax !== -1 && requested > planMax) {
+        toast(`Plan ${PLANS[planId].name} : ${planMax} membres max par groupe. Limité à ${planMax}.`, { icon: "🔒" });
+      }
+      const created = await createGroup({
+        name: name || "Ma tontine",
+        emoji,
+        description: description || `Tontine ${frequencies.find(f => f.value === frequency)?.label.toLowerCase()}`,
+        amount: parseInt(amount) || 0,
+        frequency,
+        maxMembers: cappedMembers,
+        startDate,
+        rotation,
+        ownerName: profile.fullName,
+        currency: profile.currency,
+      });
+      toast.success(`Tontine créée 🎉 Code : ${created.code}`);
+      router.push(`/dashboard/groups/${created.id}`);
+    } catch {
+      toast.error("Échec de la création. Réessayez.");
       setLoading(false);
-      router.push("/dashboard/groups");
-    }, 1200);
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(inviteLink).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    }
   };
 
   // Écran de blocage si limite atteinte
@@ -106,7 +101,7 @@ export default function NewGroupPage() {
           </p>
         </div>
         <div className="bg-white border border-gray-100 rounded-2xl p-6 text-left space-y-3">
-          <p className="text-sm font-semibold text-gray-700">Plan Pro — 5 000 FCFA/mois</p>
+          <p className="text-sm font-semibold text-gray-700">Plan Pro — 7 500 FCFA/mois</p>
           {["Groupes illimités","Membres illimités","Rappels WhatsApp illimités","Rapports & statistiques","Support prioritaire"].map(f => (
             <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
               <Check className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -116,11 +111,11 @@ export default function NewGroupPage() {
         </div>
         <div className="flex flex-col gap-3">
           <Link
-            href="/auth/register?plan=pro"
+            href="/dashboard/upgrade"
             className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl gradient-emerald text-white font-semibold hover:opacity-90 transition-opacity shadow-md shadow-emerald-200"
           >
             <Zap className="w-4 h-4" fill="white" />
-            Passer au Pro — 5 000 FCFA/mois
+            Passer au Pro — 7 500 FCFA/mois
           </Link>
           <Link
             href="/dashboard/groups"
@@ -234,7 +229,7 @@ export default function NewGroupPage() {
                       placeholder="30 000"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm pr-16"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">FCFA</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">{profile.currency}</span>
                   </div>
                 </div>
                 <div>
@@ -340,7 +335,7 @@ export default function NewGroupPage() {
                 <div>
                   <p className="font-semibold text-emerald-900 text-sm">{name}</p>
                   <p className="text-xs text-emerald-600">
-                    {amount ? `${amount} FCFA` : "—"} · {frequencies.find(f => f.value === frequency)?.label} · {maxMembers || "?"} membres max
+                    {amount ? `${amount} ${profile.currency}` : "—"} · {frequencies.find(f => f.value === frequency)?.label} · {maxMembers || "?"} membres max
                   </p>
                 </div>
               </div>
@@ -349,26 +344,12 @@ export default function NewGroupPage() {
             <div className="p-4 rounded-2xl gradient-dark text-white">
               <div className="flex items-center gap-2 mb-2">
                 <MessageCircle className="w-4 h-4 text-green-400" fill="currentColor" />
-                <span className="text-sm font-semibold">Inviter via WhatsApp</span>
+                <span className="text-sm font-semibold">Code & lien d&apos;invitation</span>
               </div>
-              <p className="text-emerald-200 text-sm mb-3">
-                Partagez le lien d&apos;invitation sur votre groupe WhatsApp.
+              <p className="text-emerald-200 text-sm">
+                {inviteLink}. Vous pourrez alors partager le <strong>code à 8 caractères</strong> ou le lien
+                pour que vos proches rejoignent la tontine.
               </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={inviteLink}
-                  readOnly
-                  className="flex-1 px-3 py-2 rounded-xl bg-white/10 text-white text-xs border border-white/20"
-                />
-                <button
-                  onClick={handleCopy}
-                  className="px-3 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-xs font-semibold transition-colors flex items-center gap-1.5"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? "Copié !" : "Copier"}
-                </button>
-              </div>
             </div>
 
             <div>

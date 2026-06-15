@@ -19,6 +19,15 @@ const countries = [
   { code: "BE", name: "Belgique", dial: "+32" },
 ];
 
+const currencies = [
+  { code: "FCFA", label: "FCFA — Franc CFA (XOF/XAF)" },
+  { code: "EUR", label: "€ — Euro" },
+  { code: "USD", label: "$ — Dollar US" },
+  { code: "GHS", label: "₵ — Cedi ghanéen" },
+  { code: "NGN", label: "₦ — Naira nigérian" },
+  { code: "MAD", label: "DH — Dirham marocain" },
+];
+
 const perks = [
   "Création de tontine en 2 minutes",
   "Rappels WhatsApp automatiques",
@@ -39,6 +48,7 @@ export default function RegisterPage() {
   const [dial, setDial] = useState(countries[0].dial);
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState(countries[0].code);
+  const [currency, setCurrency] = useState(currencies[0].code);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -88,6 +98,7 @@ export default function RegisterPage() {
             full_name: `${firstName.trim()} ${lastName.trim()}`,
             phone: fullPhone,
             country,
+            currency,
           },
         },
       });
@@ -101,7 +112,8 @@ export default function RegisterPage() {
       // n'est créée tant que l'utilisateur n'a pas cliqué sur le lien reçu.
       if (data.session) {
         toast.success("Compte créé avec succès 🎉");
-        router.push("/dashboard");
+        const plan = new URLSearchParams(window.location.search).get("plan");
+        router.push(plan === "pro" || plan === "diaspora" ? "/dashboard/upgrade" : "/dashboard");
       } else {
         toast.success(
           "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse."
@@ -275,17 +287,31 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Pays</label>
-                  <select
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
-                  >
-                    {countries.map((c) => (
-                      <option key={c.code} value={c.code}>{c.name}</option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Pays</label>
+                    <select
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
+                    >
+                      {countries.map((c) => (
+                        <option key={c.code} value={c.code}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Devise</label>
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
+                    >
+                      {currencies.map((c) => (
+                        <option key={c.code} value={c.code}>{c.code}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </>
             )}

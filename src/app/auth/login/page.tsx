@@ -35,7 +35,8 @@ export default function LoginPage() {
         return;
       }
       toast.success("Connexion réussie 👋");
-      router.push("/dashboard");
+      const redirect = new URLSearchParams(window.location.search).get("redirect");
+      router.push(redirect && redirect.startsWith("/") ? redirect : "/dashboard");
     } catch {
       toast.error("Une erreur est survenue. Réessayez.");
     } finally {

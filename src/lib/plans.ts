@@ -5,6 +5,8 @@ export type PlanId = "free" | "pro" | "diaspora";
 export const PLANS: Record<PlanId, {
   name: string;
   price: string;
+  amount: number;          // montant mensuel (FCFA) facturé
+  trialDays: number;       // jours d'essai gratuit
   maxGroups: number;       // -1 = illimité
   maxMembers: number;      // par groupe, -1 = illimité
   remindersPerMonth: number; // -1 = illimité
@@ -13,6 +15,8 @@ export const PLANS: Record<PlanId, {
   free: {
     name: "Gratuit",
     price: "0 FCFA",
+    amount: 0,
+    trialDays: 0,
     maxGroups: 3,
     maxMembers: 10,
     remindersPerMonth: 10,
@@ -20,7 +24,9 @@ export const PLANS: Record<PlanId, {
   },
   pro: {
     name: "Pro",
-    price: "5 000 FCFA/mois",
+    price: "7 500 FCFA/mois",
+    amount: 7500,
+    trialDays: 7,
     maxGroups: -1,
     maxMembers: -1,
     remindersPerMonth: -1,
@@ -28,7 +34,9 @@ export const PLANS: Record<PlanId, {
   },
   diaspora: {
     name: "Diaspora",
-    price: "4 900 FCFA/mois",
+    price: "13 000 FCFA/mois",
+    amount: 13000,
+    trialDays: 7,
     maxGroups: -1,
     maxMembers: -1,
     remindersPerMonth: -1,

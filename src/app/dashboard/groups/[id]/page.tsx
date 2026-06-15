@@ -1,213 +1,140 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import toast from "react-hot-toast";
 import {
   ArrowLeft, Users, Calendar, TrendingUp, MessageCircle,
   CheckCircle, Clock, Share2, Settings, Plus, Copy, Check,
   Pencil, Save, X,
 } from "lucide-react";
 import PaymentModal from "@/components/dashboard/PaymentModal";
-
-type Group = {
-  id: string;
-  name: string;
-  emoji: string;
-  description: string;
-  members: number;
-  maxMembers: number;
-  amount: string;
-  frequency: string;
-  progress: number;
-  nextDate: string;
-  beneficiary: string;
-  round: string;
-  status: string;
-  myTurn: boolean;
-  avatars: string[];
-  createdAt?: string;
-};
-
-const defaultGroups: Group[] = [
-  {
-    id: "1",
-    name: "Famille Diallo",
-    emoji: "🇸🇳",
-    description: "Tontine familiale mensuelle",
-    members: 12,
-    maxMembers: 12,
-    amount: "30 000",
-    frequency: "Mensuel",
-    progress: 83,
-    nextDate: "25 juin 2026",
-    beneficiary: "Aminata K.",
-    round: "8/12",
-    status: "active",
-    myTurn: false,
-    avatars: ["https://i.pravatar.cc/40?img=47", "https://i.pravatar.cc/40?img=8", "https://i.pravatar.cc/40?img=44"],
-  },
-  {
-    id: "2",
-    name: "Commerçantes Marché HLM",
-    emoji: "👩‍🤝‍👩",
-    description: "Groupe de commerçantes du marché HLM",
-    members: 8,
-    maxMembers: 10,
-    amount: "50 000",
-    frequency: "Mensuel",
-    progress: 50,
-    nextDate: "30 juin 2026",
-    beneficiary: "Vous",
-    round: "4/8",
-    status: "active",
-    myTurn: true,
-    avatars: ["https://i.pravatar.cc/40?img=56", "https://i.pravatar.cc/40?img=44", "https://i.pravatar.cc/40?img=47"],
-  },
-  {
-    id: "3",
-    name: "Association Diaspora Paris",
-    emoji: "🇫🇷",
-    description: "Diaspora africaine en France",
-    members: 20,
-    maxMembers: 20,
-    amount: "100",
-    frequency: "Mensuel",
-    progress: 65,
-    nextDate: "1 juillet 2026",
-    beneficiary: "Jean-Pierre M.",
-    round: "13/20",
-    status: "active",
-    myTurn: false,
-    avatars: ["https://i.pravatar.cc/40?img=12", "https://i.pravatar.cc/40?img=15", "https://i.pravatar.cc/40?img=8"],
-  },
-  {
-    id: "4",
-    name: "Tontine Étudiantes UCAD",
-    emoji: "🎓",
-    description: "Étudiantes de l'Université Cheikh Anta Diop",
-    members: 6,
-    maxMembers: 10,
-    amount: "15 000",
-    frequency: "Hebdomadaire",
-    progress: 100,
-    nextDate: "Terminée",
-    beneficiary: "—",
-    round: "6/6",
-    status: "completed",
-    myTurn: false,
-    avatars: ["https://i.pravatar.cc/40?img=44", "https://i.pravatar.cc/40?img=56", "https://i.pravatar.cc/40?img=47"],
-  },
-];
-
-const defaultMembers: Record<string, { name: string; phone: string; avatar: string; paid: boolean; order: number }[]> = {
-  "1": [
-    { name: "Aminata Kouyaté", phone: "+221 77 123 45 67", avatar: "https://i.pravatar.cc/40?img=47", paid: true, order: 1 },
-    { name: "Moussa Diallo", phone: "+221 70 234 56 78", avatar: "https://i.pravatar.cc/40?img=8", paid: true, order: 2 },
-    { name: "Fatou Sow", phone: "+221 76 345 67 89", avatar: "https://i.pravatar.cc/40?img=44", paid: true, order: 3 },
-    { name: "Ibrahima Ndiaye", phone: "+221 77 456 78 90", avatar: "https://i.pravatar.cc/40?img=15", paid: false, order: 4 },
-    { name: "Mariama Traoré", phone: "+221 70 567 89 01", avatar: "https://i.pravatar.cc/40?img=56", paid: true, order: 5 },
-  ],
-};
+import {
+  getGroup, listMembers, addMember, setMemberPaid, updateGroup, getAccountPlan,
+  frequencyLabel, formatAmount, type GroupRow, type MemberRow,
+} from "@/lib/db";
+import { PLANS, type PlanId } from "@/lib/plans";
 
 export default function GroupDetailPage() {
   const params = useParams();
   const id = params?.id as string;
 
-  const [group, setGroup] = useState<Group | null>(null);
-  const [isUserGroup, setIsUserGroup] = useState(false);
+  const [group, setGroup] = useState<GroupRow | null>(null);
+  const [members, setMembers] = useState<MemberRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [members, setMembers] = useState<{ name: string; phone: string; avatar: string; paid: boolean; order: number }[]>([]);
   const [copied, setCopied] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [plan, setPlan] = useState<PlanId>("free");
 
-  useEffect(() => {
-    // Check localStorage first
-    const stored: Group[] = JSON.parse(localStorage.getItem("tontiflow_groups") || "[]");
-    const userGroup = stored.find((g) => g.id === id);
-
-    if (userGroup) {
-      setGroup(userGroup);
-      setIsUserGroup(true);
-      setEditName(userGroup.name);
-      setEditDescription(userGroup.description);
-      setEditAmount(userGroup.amount);
-      // Load members for this group
-      const storedMembers = JSON.parse(localStorage.getItem(`tontiflow_members_${id}`) || "[]");
-      setMembers(storedMembers);
-    } else {
-      const fallback = defaultGroups.find((g) => g.id === id) || null;
-      setGroup(fallback);
-      setIsUserGroup(false);
-      if (fallback) {
-        setMembers(defaultMembers[id] || []);
+  const reload = useCallback(async () => {
+    try {
+      const g = await getGroup(id);
+      setGroup(g);
+      if (g) {
+        setEditName(g.name);
+        setEditDescription(g.description ?? "");
+        setEditAmount(String(g.amount));
+        setMembers(await listMembers(id));
       }
+    } catch {
+      toast.error("Impossible de charger la tontine.");
+    } finally {
+      setLoading(false);
     }
   }, [id]);
 
-  const saveChanges = () => {
+  useEffect(() => {
+    reload();
+    getAccountPlan().then(setPlan);
+  }, [reload]);
+
+  const saveChanges = async () => {
     if (!group) return;
-    const updated = { ...group, name: editName, description: editDescription, amount: editAmount };
-    const stored: Group[] = JSON.parse(localStorage.getItem("tontiflow_groups") || "[]");
-    const index = stored.findIndex((g) => g.id === id);
-    if (index !== -1) {
-      stored[index] = updated;
-      localStorage.setItem("tontiflow_groups", JSON.stringify(stored));
-    }
-    setGroup(updated);
-    setEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  const addMember = () => {
-    if (!newPhone.trim()) return;
-    const newMember = {
-      name: newPhone,
-      phone: newPhone,
-      avatar: `https://i.pravatar.cc/40?img=${Math.floor(Math.random() * 70)}`,
-      paid: false,
-      order: members.length + 1,
-    };
-    const updated = [...members, newMember];
-    setMembers(updated);
-    localStorage.setItem(`tontiflow_members_${id}`, JSON.stringify(updated));
-    setNewPhone("");
-
-    // Update member count in group
-    if (isUserGroup && group) {
-      const stored: Group[] = JSON.parse(localStorage.getItem("tontiflow_groups") || "[]");
-      const index = stored.findIndex((g) => g.id === id);
-      if (index !== -1) {
-        stored[index].members = updated.length;
-        localStorage.setItem("tontiflow_groups", JSON.stringify(stored));
-        setGroup({ ...group, members: updated.length });
-      }
+    try {
+      await updateGroup(id, {
+        name: editName,
+        description: editDescription,
+        amount: parseInt(editAmount) || 0,
+      });
+      setGroup({ ...group, name: editName, description: editDescription, amount: parseInt(editAmount) || 0 });
+      setEditing(false);
+      toast.success("Modifications enregistrées !");
+    } catch {
+      toast.error("Échec de l'enregistrement.");
     }
   };
 
-  const togglePaid = (order: number) => {
-    const updated = members.map((m) =>
-      m.order === order ? { ...m, paid: !m.paid } : m
-    );
-    setMembers(updated);
-    if (isUserGroup) {
-      localStorage.setItem(`tontiflow_members_${id}`, JSON.stringify(updated));
+  const handleAddMember = async () => {
+    if (!newPhone.trim() || !group) return;
+    const planMax = PLANS[plan].maxMembers;
+    const limit = planMax === -1 ? group.max_members : Math.min(group.max_members, planMax);
+    if (members.length >= limit) {
+      toast.error(
+        planMax !== -1 && limit === planMax
+          ? `Plan ${PLANS[plan].name} : ${planMax} membres max. Passez à un plan supérieur.`
+          : `Limite de ${group.max_members} membres atteinte pour cette tontine.`
+      );
+      return;
+    }
+    try {
+      const isPhone = /[0-9+]/.test(newPhone);
+      const member = await addMember(
+        id,
+        isPhone ? `Membre ${members.length + 1}` : newPhone.trim(),
+        isPhone ? newPhone.trim() : "",
+        members.length + 1
+      );
+      setMembers((prev) => [...prev, member]);
+      setNewPhone("");
+    } catch {
+      toast.error("Impossible d'ajouter le membre.");
     }
   };
+
+  const togglePaid = async (member: MemberRow) => {
+    if (!group) return;
+    const next = !member.paid;
+    setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, paid: next } : m)));
+    try {
+      await setMemberPaid(id, member.id, group.amount, next);
+    } catch {
+      toast.error("Échec de la mise à jour du paiement.");
+      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, paid: !next } : m)));
+    }
+  };
+
+  const joinLink = typeof window !== "undefined" && group ? `${window.location.origin}/join/${group.code}` : "";
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(`https://tontiflow.app/join/${id}`).then(() => {
+    navigator.clipboard.writeText(joinLink).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
+
+  const handleCopyCode = () => {
+    if (!group) return;
+    navigator.clipboard.writeText(group.code).then(() => {
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-24">
+        <span className="w-8 h-8 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!group) {
     return (
@@ -223,7 +150,7 @@ export default function GroupDetailPage() {
   }
 
   const paidCount = members.filter((m) => m.paid).length;
-  const progress = members.length > 0 ? Math.round((paidCount / members.length) * 100) : group.progress;
+  const progress = members.length > 0 ? Math.round((paidCount / members.length) * 100) : 0;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -234,13 +161,11 @@ export default function GroupDetailPage() {
         </Link>
         <div className="flex-1 min-w-0">
           {editing ? (
-            <div className="flex items-center gap-2">
-              <input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="text-xl font-bold text-gray-900 border-b-2 border-emerald-500 focus:outline-none bg-transparent"
-              />
-            </div>
+            <input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="text-xl font-bold text-gray-900 border-b-2 border-emerald-500 focus:outline-none bg-transparent"
+            />
           ) : (
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-gray-900 truncate">{group.emoji} {group.name}</h1>
@@ -251,18 +176,17 @@ export default function GroupDetailPage() {
               </span>
             </div>
           )}
-          <p className="text-sm text-gray-500 mt-0.5 truncate">{group.description} · {group.frequency}</p>
+          <p className="text-sm text-gray-500 mt-0.5 truncate">{group.description || "—"} · {frequencyLabel(group.frequency)}</p>
         </div>
         <div className="flex gap-2 shrink-0">
           <button onClick={handleCopy} className="p-2 rounded-xl hover:bg-gray-100 transition-colors" title="Copier le lien d'invitation">
             {copied ? <Check className="w-5 h-5 text-emerald-500" /> : <Share2 className="w-5 h-5 text-gray-500" />}
           </button>
-          {isUserGroup && !editing && (
+          {!editing ? (
             <button onClick={() => setEditing(true)} className="p-2 rounded-xl hover:bg-gray-100 transition-colors" title="Modifier">
               <Settings className="w-5 h-5 text-gray-500" />
             </button>
-          )}
-          {editing && (
+          ) : (
             <>
               <button onClick={saveChanges} className="p-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 transition-colors" title="Enregistrer">
                 <Save className="w-5 h-5 text-emerald-600" />
@@ -274,13 +198,6 @@ export default function GroupDetailPage() {
           )}
         </div>
       </div>
-
-      {saved && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 font-medium">
-          <Check className="w-4 h-4" />
-          Modifications enregistrées !
-        </div>
-      )}
 
       {/* Edit panel */}
       {editing && (
@@ -298,7 +215,7 @@ export default function GroupDetailPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Montant de cotisation (FCFA)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Montant de cotisation ({group.currency})</label>
             <input
               value={editAmount}
               onChange={(e) => setEditAmount(e.target.value)}
@@ -306,10 +223,7 @@ export default function GroupDetailPage() {
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
             />
           </div>
-          <button
-            onClick={saveChanges}
-            className="w-full py-3 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-          >
+          <button onClick={saveChanges} className="w-full py-3 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity">
             Enregistrer les modifications
           </button>
         </div>
@@ -318,32 +232,10 @@ export default function GroupDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          {
-            icon: TrendingUp,
-            label: "Pot du mois",
-            value: members.length > 0
-              ? `${parseInt(group.amount.replace(/\s/g, "")) * members.length || "—"} FCFA`
-              : `${group.amount} FCFA/pers.`,
-            color: "text-emerald-600 bg-emerald-50",
-          },
-          {
-            icon: Users,
-            label: "Membres",
-            value: `${members.length > 0 ? members.length : group.members}/${group.maxMembers}`,
-            color: "text-blue-600 bg-blue-50",
-          },
-          {
-            icon: Calendar,
-            label: "Prochain versement",
-            value: group.nextDate,
-            color: "text-purple-600 bg-purple-50",
-          },
-          {
-            icon: CheckCircle,
-            label: "Cotisations",
-            value: members.length > 0 ? `${paidCount}/${members.length} payées` : `${progress}%`,
-            color: "text-orange-600 bg-orange-50",
-          },
+          { icon: TrendingUp, label: "Pot du tour", value: formatAmount(group.amount * Math.max(members.length, 1), group.currency), color: "text-emerald-600 bg-emerald-50" },
+          { icon: Users, label: "Membres", value: `${members.length}/${group.max_members}`, color: "text-blue-600 bg-blue-50" },
+          { icon: Calendar, label: "Fréquence", value: frequencyLabel(group.frequency), color: "text-purple-600 bg-purple-50" },
+          { icon: CheckCircle, label: "Cotisations", value: `${paidCount}/${members.length} payées`, color: "text-orange-600 bg-orange-50" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-2xl p-4 border border-gray-100">
             <div className={`w-8 h-8 rounded-xl ${s.color} flex items-center justify-center mb-2`}>
@@ -358,7 +250,7 @@ export default function GroupDetailPage() {
       {/* Progress bar */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex justify-between mb-2">
-          <span className="text-sm font-semibold text-gray-700">Collecte du mois</span>
+          <span className="text-sm font-semibold text-gray-700">Collecte du tour</span>
           <span className="text-sm font-bold text-emerald-600">{progress}%</span>
         </div>
         <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-2">
@@ -368,8 +260,6 @@ export default function GroupDetailPage() {
           {members.length > 0
             ? `${paidCount} membre${paidCount > 1 ? "s ont" : " a"} payé · ${members.length - paidCount} en attente`
             : "Aucun membre encore ajouté"}
-          {group.beneficiary !== "—" && ` · Bénéficiaire : `}
-          {group.beneficiary !== "—" && <span className="font-semibold text-emerald-600">{group.beneficiary}</span>}
         </p>
       </div>
 
@@ -379,12 +269,6 @@ export default function GroupDetailPage() {
         <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
             <h2 className="font-semibold text-gray-900">Membres & cotisations</h2>
-            {members.length > 0 && (
-              <button className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:underline">
-                <MessageCircle className="w-3.5 h-3.5" />
-                Relancer tous
-              </button>
-            )}
           </div>
 
           {members.length === 0 ? (
@@ -398,21 +282,25 @@ export default function GroupDetailPage() {
           ) : (
             <div className="divide-y divide-gray-50">
               {members.map((m) => (
-                <div key={m.order} className="flex items-center gap-3 px-5 py-3.5">
+                <div key={m.id} className="flex items-center gap-3 px-5 py-3.5">
                   <div className="relative">
-                    <Image src={m.avatar} alt={m.name} width={36} height={36} className="w-9 h-9 rounded-full object-cover" />
+                    <div className="w-9 h-9 rounded-full gradient-emerald text-white text-xs font-bold flex items-center justify-center uppercase">
+                      {m.name.slice(0, 2)}
+                    </div>
                     <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-[8px] font-bold text-gray-600">
-                      {m.order}
+                      {m.position ?? "?"}
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-gray-900 truncate block">{m.name}</span>
-                    <span className="text-xs text-gray-400">{m.phone !== m.name ? m.phone : "Membre"}</span>
+                    <span className="text-sm font-medium text-gray-900 truncate block">
+                      {m.name}{m.is_owner ? " (vous)" : ""}
+                    </span>
+                    <span className="text-xs text-gray-400">{m.phone || "Membre"}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-gray-600">{group.amount} FCFA</span>
+                    <span className="text-xs font-semibold text-gray-600">{formatAmount(group.amount, group.currency)}</span>
                     <button
-                      onClick={() => togglePaid(m.order)}
+                      onClick={() => togglePaid(m)}
                       className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
                         m.paid ? "bg-emerald-100 hover:bg-emerald-200" : "bg-orange-100 hover:bg-orange-200"
                       }`}
@@ -420,8 +308,7 @@ export default function GroupDetailPage() {
                     >
                       {m.paid
                         ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                        : <Clock className="w-3.5 h-3.5 text-orange-500" />
-                      }
+                        : <Clock className="w-3.5 h-3.5 text-orange-500" />}
                     </button>
                   </div>
                 </div>
@@ -433,15 +320,15 @@ export default function GroupDetailPage() {
           <div className="px-5 py-4 border-t border-gray-50 space-y-3">
             <div className="flex gap-2">
               <input
-                type="tel"
+                type="text"
                 value={newPhone}
                 onChange={(e) => setNewPhone(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addMember()}
+                onKeyDown={(e) => e.key === "Enter" && handleAddMember()}
                 placeholder="+221 77 000 00 00 ou nom"
                 className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
               />
               <button
-                onClick={addMember}
+                onClick={handleAddMember}
                 disabled={!newPhone.trim()}
                 className="px-3 py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 flex items-center gap-1.5"
               >
@@ -462,17 +349,32 @@ export default function GroupDetailPage() {
 
         {/* Right column */}
         <div className="lg:col-span-2 space-y-4">
-          {/* WhatsApp invite */}
+          {/* Invitation : code + lien */}
           <div className="gradient-dark rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               <MessageCircle className="w-4 h-4 text-green-400" fill="currentColor" />
-              <span className="text-sm font-semibold text-white">Inviter via WhatsApp</span>
+              <span className="text-sm font-semibold text-white">Inviter des membres</span>
             </div>
-            <p className="text-emerald-200 text-xs mb-3">Partagez le lien pour que vos proches rejoignent en un clic.</p>
-            <div className="flex gap-2 mb-3">
+
+            {/* Code unique */}
+            <p className="text-emerald-200 text-[11px] mb-1.5 uppercase tracking-wide">Code de la tontine</p>
+            <button
+              onClick={handleCopyCode}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-white/10 border border-white/20 hover:bg-white/15 transition-colors mb-3"
+              title="Copier le code"
+            >
+              <span className="font-mono text-lg font-bold text-white tracking-[0.3em]">{group.code}</span>
+              {copiedCode
+                ? <Check className="w-4 h-4 text-green-400" />
+                : <Copy className="w-4 h-4 text-emerald-200" />}
+            </button>
+
+            {/* Lien d'invitation */}
+            <p className="text-emerald-200 text-[11px] mb-1.5 uppercase tracking-wide">Lien d&apos;invitation</p>
+            <div className="flex gap-2">
               <input
                 readOnly
-                value={`https://tontiflow.app/join/${id}`}
+                value={joinLink}
                 className="flex-1 px-3 py-2 rounded-xl bg-white/10 text-white text-xs border border-white/20 truncate"
               />
               <button
@@ -483,19 +385,16 @@ export default function GroupDetailPage() {
                 {copied ? "Copié" : "Copier"}
               </button>
             </div>
-            <button className="w-full py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-semibold transition-colors">
-              Partager sur WhatsApp
-            </button>
           </div>
 
           {/* Group info */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
             <h2 className="font-semibold text-gray-900">Informations</h2>
             {[
-              { label: "Fréquence", value: group.frequency },
-              { label: "Cotisation", value: `${group.amount} FCFA` },
-              { label: "Membres max", value: group.maxMembers.toString() },
-              { label: "Tour actuel", value: group.round },
+              { label: "Fréquence", value: frequencyLabel(group.frequency) },
+              { label: "Cotisation", value: formatAmount(group.amount, group.currency) },
+              { label: "Membres max", value: group.max_members.toString() },
+              { label: "Membres actuels", value: members.length.toString() },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between text-sm">
                 <span className="text-gray-400">{label}</span>
@@ -509,13 +408,12 @@ export default function GroupDetailPage() {
       <PaymentModal
         open={showPayModal}
         onClose={() => setShowPayModal(false)}
-        amount={group.amount}
-        currency="FCFA"
+        amount={String(group.amount)}
+        currency={group.currency}
         groupName={group.name}
-        onSuccess={() => {
-          // Update progress locally
-          const updated = members.map((m, i) => i === 0 ? { ...m, paid: true } : m);
-          setMembers(updated);
+        onSuccess={async () => {
+          const me = members.find((m) => m.is_owner) ?? members[0];
+          if (me && !me.paid) await togglePaid(me);
         }}
       />
     </div>

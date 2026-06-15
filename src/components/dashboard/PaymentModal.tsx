@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { X, Check, ChevronRight } from "lucide-react";
+import PaymentLogo from "@/components/dashboard/PaymentLogo";
+import type { PaymentType } from "@/lib/paymentMethods";
 
 type PaymentMethod = {
   id: string;
@@ -168,7 +170,6 @@ export default function PaymentModal({ open, onClose, amount, currency = "FCFA",
                   {!useQuick && (
                     <div className="space-y-2">
                       {savedMethods.map((m) => {
-                        const p = platform(m.type);
                         return (
                           <button
                             key={m.id}
@@ -179,9 +180,7 @@ export default function PaymentModal({ open, onClose, amount, currency = "FCFA",
                                 : "border-gray-100 hover:border-gray-300"
                             }`}
                           >
-                            <div className={`w-9 h-9 rounded-xl ${p.bg} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
-                              {p.logo}
-                            </div>
+                            <PaymentLogo type={m.type as PaymentType} className="w-9 h-9 shrink-0" />
                             <div className="flex-1">
                               <p className="text-sm font-semibold text-gray-900">{m.label}</p>
                               <p className="text-xs text-gray-400">{m.number.slice(0, 4)}••••{m.number.slice(-2)}</p>
@@ -215,9 +214,7 @@ export default function PaymentModal({ open, onClose, amount, currency = "FCFA",
                             : "border-gray-100 hover:border-gray-300"
                         }`}
                       >
-                        <div className={`w-8 h-8 rounded-lg ${p.bg} text-white text-xs font-bold flex items-center justify-center`}>
-                          {p.logo}
-                        </div>
+                        <PaymentLogo type={p.type as PaymentType} className="w-8 h-8" />
                         <span className="text-[10px] font-medium text-gray-600 text-center leading-tight">{p.label}</span>
                       </button>
                     ))}
@@ -226,9 +223,7 @@ export default function PaymentModal({ open, onClose, amount, currency = "FCFA",
                   {/* Number input */}
                   <div>
                     <div className="flex items-center gap-2">
-                      <div className={`w-9 h-9 rounded-xl ${platform(quickType).bg} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
-                        {platform(quickType).logo}
-                      </div>
+                      <PaymentLogo type={quickType as PaymentType} className="w-9 h-9 shrink-0" />
                       <input
                         type="text"
                         value={quickNumber}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -17,6 +17,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getDashboardStats } from "@/lib/db";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -29,7 +30,14 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
   const { profile, signOut } = useAuth();
+
+  useEffect(() => {
+    getDashboardStats()
+      .then((s) => setNotifCount(s.pendingDue))
+      .catch(() => {});
+  }, []);
 
   const initials =
     (profile.firstName?.[0] ?? "") + (profile.lastName?.[0] ?? "") ||
@@ -74,11 +82,23 @@ export default function Sidebar() {
 
       {/* Notifications quick badge */}
       <div className="px-3 pb-3">
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
+        <Link
+          href="/dashboard/notifications"
+          onClick={() => setMobileOpen(false)}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+            pathname === "/dashboard/notifications"
+              ? "bg-emerald-50 text-emerald-700"
+              : "text-gray-600 hover:bg-gray-100"
+          }`}
+        >
           <Bell className="w-4 h-4 text-gray-400" />
           Notifications
-          <span className="ml-auto w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">3</span>
-        </button>
+          {notifCount > 0 && (
+            <span className="ml-auto w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+              {notifCount}
+            </span>
+          )}
+        </Link>
       </div>
 
       {/* User card */}

@@ -7,7 +7,9 @@ import {
   Eye, EyeOff, AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
-import { getPlan, getReminderUsage, getUserGroupCount, PLANS } from "@/lib/plans";
+import toast from "react-hot-toast";
+import { getReminderUsage, PLANS } from "@/lib/plans";
+import { getAccountPlan, setAccountPlan, countGroups } from "@/lib/db";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,9 +112,9 @@ export default function SettingsPage() {
     const pm = localStorage.getItem("tontiflow_payment_methods");
     if (pm) setMethods(JSON.parse(pm));
 
-    setPlanId(getPlan());
+    getAccountPlan().then(setPlanId);
     setReminders(getReminderUsage());
-    setGroupCount(getUserGroupCount());
+    countGroups().then(setGroupCount);
 
     const fa = localStorage.getItem("tontiflow_2fa");
     if (fa) setTwoFAEnabled(fa === "true");
@@ -184,11 +186,24 @@ export default function SettingsPage() {
               <p className={`text-xs mt-0.5 ${planId === "free" ? "text-gray-500" : "text-emerald-300"}`}>{PLANS[planId].price}</p>
             </div>
           </div>
-          {planId === "free" && (
-            <Link href="/auth/register?plan=pro" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl gradient-emerald text-white text-xs font-semibold hover:opacity-90">
-              <Zap className="w-3.5 h-3.5" fill="white" /> Passer au Pro
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/dashboard/upgrade" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl gradient-emerald text-white text-xs font-semibold hover:opacity-90">
+              <Zap className="w-3.5 h-3.5" fill="white" /> {planId === "free" ? "Passer au Pro" : "Changer de formule"}
             </Link>
-          )}
+            {planId !== "free" && (
+              <button
+                onClick={async () => {
+                  if (!confirm("Revenir au plan Gratuit ? Les limites du plan Gratuit s'appliqueront.")) return;
+                  await setAccountPlan("free");
+                  setPlanId("free");
+                  toast.success("Vous êtes repassé au plan Gratuit.");
+                }}
+                className="px-3 py-2 rounded-xl bg-white/10 text-white text-xs font-semibold hover:bg-white/20 border border-white/20"
+              >
+                Repasser en Gratuit
+              </button>
+            )}
+          </div>
         </div>
         {planId === "free" && (
           <div className="mt-4 grid sm:grid-cols-2 gap-3">

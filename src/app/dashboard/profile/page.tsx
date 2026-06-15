@@ -1,26 +1,36 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Camera, Star, TrendingUp, Shield, CheckCircle, Award } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
-
-const badges = [
-  { icon: "🏆", label: "Payeur régulier", color: "bg-amber-50 border-amber-200 text-amber-700" },
-  { icon: "⚡", label: "Membre fondateur", color: "bg-purple-50 border-purple-200 text-purple-700" },
-  { icon: "🌍", label: "Diaspora", color: "bg-blue-50 border-blue-200 text-blue-700" },
-];
-
-const stats = [
-  { label: "Tontines rejointes", value: "4", icon: TrendingUp, color: "text-emerald-600" },
-  { label: "Cotisations payées", value: "24", icon: CheckCircle, color: "text-blue-600" },
-  { label: "Montant total cotisé", value: "720 000 FCFA", icon: Award, color: "text-purple-600" },
-  { label: "Score de confiance", value: "4.8/5", icon: Shield, color: "text-amber-600" },
-];
+import { getDashboardStats, formatAmount } from "@/lib/db";
+import AccountPanel from "@/components/dashboard/AccountPanel";
 
 export default function ProfilePage() {
   const { profile } = useAuth();
   const initials =
     (profile.firstName?.[0] ?? "") + (profile.lastName?.[0] ?? "") ||
     profile.fullName.slice(0, 2).toUpperCase();
+
+  const [groupCount, setGroupCount] = useState(0);
+  const [paidCount, setPaidCount] = useState(0);
+  const [totalContributed, setTotalContributed] = useState(0);
+
+  useEffect(() => {
+    getDashboardStats().then((s) => {
+      setGroupCount(s.groupCount);
+      setPaidCount(s.groups.reduce((acc, g) => acc + g.paidCount, 0));
+      setTotalContributed(s.totalManaged);
+    });
+  }, []);
+
+  const hasActivity = paidCount > 0;
+  const stats = [
+    { label: "Tontines", value: String(groupCount), icon: TrendingUp, color: "text-emerald-600" },
+    { label: "Cotisations payées", value: String(paidCount), icon: CheckCircle, color: "text-blue-600" },
+    { label: "Montant total cotisé", value: formatAmount(totalContributed, profile.currency), icon: Award, color: "text-purple-600" },
+    { label: "Score de confiance", value: hasActivity ? "Bon" : "Nouveau", icon: Shield, color: "text-amber-600" },
+  ];
 
   return (
     <div className="space-y-7 max-w-3xl">
@@ -56,11 +66,14 @@ export default function ProfilePage() {
 
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mt-3">
-                {badges.map((b) => (
-                  <span key={b.label} className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${b.color}`}>
-                    {b.icon} {b.label}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold bg-emerald-50 border-emerald-200 text-emerald-700">
+                  {hasActivity ? "🏆 Membre actif" : "✨ Nouveau membre"}
+                </span>
+                {groupCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold bg-purple-50 border-purple-200 text-purple-700">
+                    🤝 {groupCount} tontine{groupCount > 1 ? "s" : ""}
                   </span>
-                ))}
+                )}
               </div>
             </div>
 
@@ -71,6 +84,9 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Sécurité du compte + Solde */}
+      <AccountPanel />
+
       {/* Trust score */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-4">
@@ -78,25 +94,25 @@ export default function ProfilePage() {
             <Shield className="w-4 h-4 text-emerald-600" />
             Score de confiance
           </h2>
-          <span className="text-2xl font-bold text-emerald-600">4.8 / 5</span>
+          <span className="text-2xl font-bold text-emerald-600">{hasActivity ? "Bon" : "—"}</span>
         </div>
 
         <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-3">
-          <div className="h-full rounded-full gradient-emerald" style={{ width: "96%" }} />
+          <div className="h-full rounded-full gradient-emerald" style={{ width: `${hasActivity ? 100 : 0}%` }} />
         </div>
 
         <div className="flex gap-1 mb-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Star key={i} className={`w-5 h-5 ${i <= 4 ? "text-amber-400" : "text-gray-200"}`} fill={i <= 4 ? "#fbbf24" : "#e5e7eb"} />
+            <Star key={i} className={`w-5 h-5 ${hasActivity && i <= 5 ? "text-amber-400" : "text-gray-200"}`} fill={hasActivity && i <= 5 ? "#fbbf24" : "#e5e7eb"} />
           ))}
-          <span className="text-sm text-gray-400 ml-2">Basé sur 24 paiements</span>
+          <span className="text-sm text-gray-400 ml-2">Basé sur {paidCount} paiement{paidCount > 1 ? "s" : ""}</span>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Ponctualité", pct: 95 },
-            { label: "Fiabilité", pct: 100 },
-            { label: "Participation", pct: 90 },
+            { label: "Ponctualité", pct: hasActivity ? 100 : 0 },
+            { label: "Fiabilité", pct: hasActivity ? 100 : 0 },
+            { label: "Participation", pct: hasActivity ? 100 : 0 },
           ].map((s) => (
             <div key={s.label} className="text-center p-3 rounded-xl bg-gray-50">
               <div className="relative w-12 h-12 mx-auto mb-2">

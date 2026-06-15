@@ -12,6 +12,7 @@ type Profile = {
   email: string;
   phone: string;
   country: string;
+  currency: string;
 };
 
 type AuthContextValue = {
@@ -38,6 +39,7 @@ function buildProfile(user: User | null): Profile {
     email: user?.email ?? "",
     phone: meta.phone ?? "",
     country: meta.country ?? "",
+    currency: meta.currency ?? "FCFA",
   };
 }
 
