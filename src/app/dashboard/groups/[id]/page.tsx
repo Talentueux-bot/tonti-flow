@@ -16,6 +16,7 @@ import {
 import { PLANS, type PlanId } from "@/lib/plans";
 import { startPawapayCheckout } from "@/lib/checkout";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { waLink, waShareLink, reminderMessage } from "@/lib/whatsapp";
 
 export default function GroupDetailPage() {
   const params = useParams();
@@ -284,6 +285,20 @@ export default function GroupDetailPage() {
         <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
             <h2 className="font-semibold text-gray-900">Membres & cotisations</h2>
+            {members.some((m) => !m.paid) && (
+              <a
+                href={waShareLink(
+                  `Bonjour à tous 👋\nRappel : pensez à régler votre cotisation de ${formatAmount(group.amount, group.currency)} pour la tontine « ${group.name} ». Merci ! 🙏 — via TontiFlow`
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-medium text-green-600 hover:text-green-700"
+                title="Relancer le groupe sur WhatsApp"
+              >
+                <MessageCircle className="w-3.5 h-3.5" fill="currentColor" />
+                Relancer le groupe
+              </a>
+            )}
           </div>
 
           {members.length === 0 ? (
@@ -314,6 +329,22 @@ export default function GroupDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-gray-600">{formatAmount(group.amount, group.currency)}</span>
+                    {!m.paid && m.phone && (
+                      <a
+                        href={waLink(m.phone, reminderMessage({
+                          memberName: m.name,
+                          groupName: group.name,
+                          amount: group.amount,
+                          currency: group.currency,
+                        }))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-6 h-6 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center transition-colors"
+                        title="Relancer sur WhatsApp"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-green-600" fill="currentColor" />
+                      </a>
+                    )}
                     <button
                       onClick={() => togglePaid(m)}
                       className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
