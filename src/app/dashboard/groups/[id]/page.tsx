@@ -9,12 +9,13 @@ import {
   CheckCircle, Clock, Share2, Settings, Plus, Copy, Check,
   Pencil, Save, X,
 } from "lucide-react";
-import PaymentModal from "@/components/dashboard/PaymentModal";
 import {
   getGroup, listMembers, addMember, setMemberPaid, updateGroup, getAccountPlan,
   frequencyLabel, formatAmount, type GroupRow, type MemberRow,
 } from "@/lib/db";
 import { PLANS, type PlanId } from "@/lib/plans";
+import { startPawapayCheckout } from "@/lib/checkout";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function GroupDetailPage() {
   const params = useParams();
@@ -31,8 +32,9 @@ export default function GroupDetailPage() {
   const [newPhone, setNewPhone] = useState("");
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [showPayModal, setShowPayModal] = useState(false);
+  const [paying, setPaying] = useState(false);
   const [plan, setPlan] = useState<PlanId>("free");
+  const { user } = useAuth();
 
   const reload = useCallback(async () => {
     try {
@@ -112,6 +114,19 @@ export default function GroupDetailPage() {
   };
 
   const joinLink = typeof window !== "undefined" && group ? `${window.location.origin}/join/${group.code}` : "";
+
+  const payCotisation = async () => {
+    if (!group) return;
+    const mine = members.find((m) => m.user_id === user?.id) ?? members.find((m) => m.is_owner) ?? members[0];
+    if (!mine) { toast.error("Aucun membre à payer."); return; }
+    setPaying(true);
+    try {
+      await startPawapayCheckout({ purpose: "cotisation", groupId: id, memberId: mine.id });
+    } catch (e) {
+      toast.error((e as Error).message);
+      setPaying(false);
+    }
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(joinLink).then(() => {
@@ -338,10 +353,13 @@ export default function GroupDetailPage() {
             </div>
             {members.length > 0 && (
               <button
-                onClick={() => setShowPayModal(true)}
-                className="w-full py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+                onClick={payCotisation}
+                disabled={paying}
+                className="w-full py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center"
               >
-                Payer ma cotisation · Wave / Orange Money
+                {paying
+                  ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : "Payer ma cotisation · Mobile Money (PawaPay)"}
               </button>
             )}
           </div>
@@ -405,17 +423,6 @@ export default function GroupDetailPage() {
         </div>
       </div>
 
-      <PaymentModal
-        open={showPayModal}
-        onClose={() => setShowPayModal(false)}
-        amount={String(group.amount)}
-        currency={group.currency}
-        groupName={group.name}
-        onSuccess={async () => {
-          const me = members.find((m) => m.is_owner) ?? members[0];
-          if (me && !me.paid) await togglePaid(me);
-        }}
-      />
     </div>
   );
 }

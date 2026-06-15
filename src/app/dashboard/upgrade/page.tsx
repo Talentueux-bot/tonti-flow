@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ArrowLeft, Check, Zap, Star } from "lucide-react";
 import { PLANS, type PlanId } from "@/lib/plans";
-import { setAccountPlan } from "@/lib/db";
-import PaymentModal from "@/components/dashboard/PaymentModal";
+import { startPawapayCheckout } from "@/lib/checkout";
 
 const paidPlans: { id: PlanId; tagline: string; features: string[]; highlight: boolean }[] = [
   {
@@ -39,10 +37,17 @@ const paidPlans: { id: PlanId; tagline: string; features: string[]; highlight: b
 ];
 
 export default function UpgradePage() {
-  const router = useRouter();
-  const [payFor, setPayFor] = useState<PlanId | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
 
-  const selected = payFor ? PLANS[payFor] : null;
+  const subscribe = async (plan: PlanId) => {
+    setLoadingPlan(plan);
+    try {
+      await startPawapayCheckout({ purpose: "subscription", plan });
+    } catch (e) {
+      toast.error((e as Error).message);
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-7">
@@ -95,14 +100,17 @@ export default function UpgradePage() {
               </ul>
 
               <button
-                onClick={() => setPayFor(p.id)}
-                className={`w-full py-3 rounded-xl text-sm font-semibold transition-all ${
+                onClick={() => subscribe(p.id)}
+                disabled={loadingPlan !== null}
+                className={`w-full py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 flex items-center justify-center ${
                   p.highlight
                     ? "bg-white text-emerald-700 hover:bg-emerald-50"
                     : "gradient-emerald text-white hover:opacity-90 shadow-md shadow-emerald-200"
                 }`}
               >
-                Démarrer l&apos;essai gratuit (7 jours)
+                {loadingPlan === p.id
+                  ? <span className="w-5 h-5 border-2 border-emerald-300 border-t-emerald-600 rounded-full animate-spin" />
+                  : "Démarrer l'essai gratuit (7 jours)"}
               </button>
               <p className={`text-center text-[11px] mt-2 ${p.highlight ? "text-emerald-300" : "text-gray-400"}`}>
                 Puis {new Intl.NumberFormat("fr-FR").format(plan.amount)} FCFA/mois · annulable à tout moment
@@ -112,20 +120,6 @@ export default function UpgradePage() {
         })}
       </div>
 
-      {selected && payFor && (
-        <PaymentModal
-          open={!!payFor}
-          onClose={() => setPayFor(null)}
-          amount={String(selected.amount)}
-          currency="FCFA"
-          groupName={`Abonnement ${selected.name} (essai 7 jours)`}
-          onSuccess={async () => {
-            await setAccountPlan(payFor);
-            toast.success(`Plan ${selected.name} activé 🎉`);
-            setTimeout(() => router.push("/dashboard"), 800);
-          }}
-        />
-      )}
     </div>
   );
 }
