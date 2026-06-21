@@ -43,10 +43,7 @@ function ReturnInner() {
     return () => { active = false; };
   }, [depositId, router]);
 
-  const destination =
-    purpose === "subscription" ? "/dashboard"
-    : purpose === "recharge" ? "/dashboard/profile"
-    : "/dashboard/groups";
+  const destination = purpose === "recharge" ? "/dashboard/profile" : "/dashboard/groups";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">

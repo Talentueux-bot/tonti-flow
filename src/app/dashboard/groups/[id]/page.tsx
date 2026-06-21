@@ -10,13 +10,13 @@ import {
   Pencil, Save, X,
 } from "lucide-react";
 import {
-  getGroup, listMembers, addMember, setMemberPaid, updateGroup, getAccountPlan,
+  getGroup, listMembers, addMember, setMemberPaid, updateGroup,
   frequencyLabel, formatAmount, type GroupRow, type MemberRow,
 } from "@/lib/db";
-import { PLANS, type PlanId } from "@/lib/plans";
 import { startPawapayCheckout } from "@/lib/checkout";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { waLink, waShareLink, reminderMessage } from "@/lib/whatsapp";
+import FeeSummary from "@/components/dashboard/FeeSummary";
 
 export default function GroupDetailPage() {
   const params = useParams();
@@ -34,7 +34,7 @@ export default function GroupDetailPage() {
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [plan, setPlan] = useState<PlanId>("free");
+  const [confirmPay, setConfirmPay] = useState(false);
   const { user } = useAuth();
 
   const reload = useCallback(async () => {
@@ -56,7 +56,6 @@ export default function GroupDetailPage() {
 
   useEffect(() => {
     reload();
-    getAccountPlan().then(setPlan);
   }, [reload]);
 
   const saveChanges = async () => {
@@ -77,14 +76,8 @@ export default function GroupDetailPage() {
 
   const handleAddMember = async () => {
     if (!newPhone.trim() || !group) return;
-    const planMax = PLANS[plan].maxMembers;
-    const limit = planMax === -1 ? group.max_members : Math.min(group.max_members, planMax);
-    if (members.length >= limit) {
-      toast.error(
-        planMax !== -1 && limit === planMax
-          ? `Plan ${PLANS[plan].name} : ${planMax} membres max. Passez à un plan supérieur.`
-          : `Limite de ${group.max_members} membres atteinte pour cette tontine.`
-      );
+    if (members.length >= group.max_members) {
+      toast.error(`Limite de ${group.max_members} membres atteinte pour cette tontine.`);
       return;
     }
     try {
@@ -384,13 +377,11 @@ export default function GroupDetailPage() {
             </div>
             {members.length > 0 && (
               <button
-                onClick={payCotisation}
+                onClick={() => setConfirmPay(true)}
                 disabled={paying}
                 className="w-full py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center"
               >
-                {paying
-                  ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  : "Payer ma cotisation · Mobile Money (PawaPay)"}
+                Payer ma cotisation · Mobile Money (PawaPay)
               </button>
             )}
           </div>
@@ -454,6 +445,35 @@ export default function GroupDetailPage() {
         </div>
       </div>
 
+      {/* Confirmation de paiement avec récapitulatif des frais */}
+      {confirmPay && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">Payer ma cotisation</h2>
+              <button onClick={() => setConfirmPay(false)} className="p-2 rounded-xl hover:bg-gray-100">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-500">Tontine « {group.name} »</p>
+              <FeeSummary amount={group.amount} currency={group.currency} label="Montant cotisation" />
+              <p className="text-[11px] text-gray-400">
+                Le total sera prélevé via Mobile Money (PawaPay). Les frais de service couvrent le fonctionnement de TontiFlow.
+              </p>
+              <button
+                onClick={payCotisation}
+                disabled={paying}
+                className="w-full py-3 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center"
+              >
+                {paying
+                  ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : "Confirmer et payer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

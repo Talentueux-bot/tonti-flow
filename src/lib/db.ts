@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import type { PlanId } from "@/lib/plans";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -321,23 +320,6 @@ export async function getMyProfile(): Promise<MyProfile | null> {
   return inserted as MyProfile;
 }
 
-// ─── Plan / abonnement (persisté en base, changeable à tout moment) ──────────
-
-export async function getAccountPlan(): Promise<PlanId> {
-  const { data: u } = await supabase.auth.getUser();
-  if (!u.user) return "free";
-  const { data } = await supabase.from("profiles").select("plan").eq("id", u.user.id).maybeSingle();
-  const p = data?.plan;
-  return p === "pro" || p === "diaspora" ? p : "free";
-}
-
-export async function setAccountPlan(plan: PlanId): Promise<void> {
-  const uid = await currentUserId();
-  if (!uid) throw new Error("Non connecté");
-  const { error } = await supabase.from("profiles").upsert({ id: uid, plan }, { onConflict: "id" });
-  if (error) throw error;
-}
-
 export async function updateVerification(fields: {
   date_of_birth?: string;
   name_verified?: boolean;
@@ -401,6 +383,29 @@ export async function listWalletTransactions(): Promise<WalletTx[]> {
     .limit(20);
   if (error) throw error;
   return (data ?? []) as WalletTx[];
+}
+
+// ─── Admin : revenus (frais de service) ──────────────────────────────────────
+
+export type AdminRevenue = {
+  today: number;
+  month: number;
+  total: number;
+  tx_count: number;
+  total_processed: number;
+};
+
+export async function getAdminRevenue(): Promise<AdminRevenue> {
+  const { data, error } = await supabase.rpc("admin_revenue");
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    today: Number(row?.today ?? 0),
+    month: Number(row?.month ?? 0),
+    total: Number(row?.total ?? 0),
+    tx_count: Number(row?.tx_count ?? 0),
+    total_processed: Number(row?.total_processed ?? 0),
+  };
 }
 
 export async function getContributions() {

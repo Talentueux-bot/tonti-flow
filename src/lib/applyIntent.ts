@@ -4,12 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type PaymentIntent = {
   deposit_id: string;
   user_id: string;
-  purpose: "cotisation" | "subscription" | "recharge";
+  purpose: "cotisation" | "recharge";
   amount: number;
   currency: string;
   group_id: string | null;
   member_id: string | null;
-  plan: string | null;
   status: string;
   applied: boolean;
 };
@@ -17,6 +16,7 @@ export type PaymentIntent = {
 /**
  * Applique l'effet métier d'un paiement confirmé. Idempotent : à appeler
  * seulement si l'intent n'est pas déjà `applied`. Marque l'intent COMPLETED+applied.
+ * NB : l'effet porte sur `amount` (cotisation / recharge), les frais sont le revenu.
  */
 export async function applyIntent(client: SupabaseClient, intent: PaymentIntent): Promise<void> {
   if (intent.applied) return;
@@ -29,8 +29,6 @@ export async function applyIntent(client: SupabaseClient, intent: PaymentIntent)
       status: "paid",
       paid_at: new Date().toISOString(),
     });
-  } else if (intent.purpose === "subscription" && intent.plan) {
-    await client.from("profiles").update({ plan: intent.plan }).eq("id", intent.user_id);
   } else if (intent.purpose === "recharge") {
     const { data: prof } = await client.from("profiles").select("balance").eq("id", intent.user_id).single();
     const newBalance = Number(prof?.balance ?? 0) + Number(intent.amount);

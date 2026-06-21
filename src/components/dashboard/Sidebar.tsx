@@ -15,9 +15,11 @@ import {
   Menu,
   X,
   ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getDashboardStats } from "@/lib/db";
+import { isAdminEmail } from "@/lib/admin";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -26,6 +28,8 @@ const navItems = [
   { href: "/dashboard/profile", icon: User, label: "Profil" },
   { href: "/dashboard/settings", icon: Settings, label: "Paramètres" },
 ];
+
+const adminItem = { href: "/dashboard/admin", icon: ShieldCheck, label: "Admin" };
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -59,7 +63,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ href, icon: Icon, label }) => {
+        {(isAdminEmail(profile.email) ? [...navItems, adminItem] : navItems).map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
             <Link

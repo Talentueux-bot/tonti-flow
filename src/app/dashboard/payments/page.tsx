@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import {
   CheckCircle, ArrowUpRight, ArrowDownLeft, CreditCard,
-  Search, Download, Plus, Trash2, X, Wallet, Lock,
+  Search, Download, Plus, Trash2, X, Wallet,
 } from "lucide-react";
-import { getContributions, getAccountPlan, formatAmount } from "@/lib/db";
+import { getContributions, formatAmount } from "@/lib/db";
 import { useAuth } from "@/components/auth/AuthProvider";
 import PaymentLogo from "@/components/dashboard/PaymentLogo";
 import { PAYMENT_CATALOG, getPlatform, maskNumber, type PaymentType } from "@/lib/paymentMethods";
-import { type PlanId } from "@/lib/plans";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -48,9 +46,6 @@ export default function PaymentsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [totalContributed, setTotalContributed] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [plan, setPlan] = useState<PlanId>("free");
-
-  const cardLocked = (type: PaymentType) => (type === "visa" || type === "mastercard") && plan !== "diaspora";
 
   // Add method modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -61,8 +56,6 @@ export default function PaymentsPage() {
   useEffect(() => {
     const stored = localStorage.getItem("tontiflow_payment_methods");
     if (stored) setMethods(JSON.parse(stored));
-
-    getAccountPlan().then(setPlan);
 
     getContributions()
       .then((rows) => {
@@ -91,7 +84,6 @@ export default function PaymentsPage() {
 
   const handleAddMethod = () => {
     setAddError("");
-    if (cardLocked(addType)) { setAddError("Les cartes bancaires sont réservées au plan Diaspora."); return; }
     if (!addNumber.trim()) { setAddError("Veuillez saisir un numéro."); return; }
     const platform = getPlatform(addType);
     const isCard = addType === "visa" || addType === "mastercard";
@@ -271,30 +263,19 @@ export default function PaymentsPage() {
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-3">Choisissez la plateforme</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {PAYMENT_CATALOG.map((p) => {
-                    const locked = cardLocked(p.type);
-                    return (
-                      <button
-                        key={p.type}
-                        onClick={() => { if (locked) { setAddError("Cartes bancaires réservées au plan Diaspora."); } else { setAddType(p.type); setAddError(""); } }}
-                        className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                          locked ? "border-gray-100 opacity-50" :
-                          addType === p.type ? "border-emerald-500 bg-emerald-50" : "border-gray-100 hover:border-gray-300"
-                        }`}
-                      >
-                        {locked && <Lock className="absolute top-1 right-1 w-3 h-3 text-gray-400" />}
-                        <PaymentLogo type={p.type} className="w-9 h-9" />
-                        <span className="text-[11px] font-medium text-gray-700 text-center leading-tight">{p.label}</span>
-                      </button>
-                    );
-                  })}
+                  {PAYMENT_CATALOG.map((p) => (
+                    <button
+                      key={p.type}
+                      onClick={() => { setAddType(p.type); setAddError(""); }}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                        addType === p.type ? "border-emerald-500 bg-emerald-50" : "border-gray-100 hover:border-gray-300"
+                      }`}
+                    >
+                      <PaymentLogo type={p.type} className="w-9 h-9" />
+                      <span className="text-[11px] font-medium text-gray-700 text-center leading-tight">{p.label}</span>
+                    </button>
+                  ))}
                 </div>
-                {plan !== "diaspora" && (
-                  <p className="text-[11px] text-gray-400 -mt-2">
-                    💳 Les cartes bancaires (Visa, Mastercard) sont réservées au{" "}
-                    <Link href="/dashboard/upgrade" className="text-emerald-600 hover:underline font-medium">plan Diaspora</Link>.
-                  </p>
-                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">{getPlatform(addType).hint}</label>

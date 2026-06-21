@@ -11,9 +11,11 @@ import PaymentLogo from "@/components/dashboard/PaymentLogo";
 import { PAYMENT_CATALOG, type PaymentType } from "@/lib/paymentMethods";
 import {
   getMyProfile, updateVerification, uploadIdDocument, setWithdrawal,
-  walletDeposit, walletWithdraw, listWalletTransactions, formatAmount,
+  walletWithdraw, listWalletTransactions, formatAmount,
   type MyProfile, type WalletTx,
 } from "@/lib/db";
+import { startPawapayCheckout } from "@/lib/checkout";
+import FeeSummary from "@/components/dashboard/FeeSummary";
 
 const DOC_TYPES = [
   { value: "cni", label: "Carte d'identité" },
@@ -38,7 +40,6 @@ export default function AccountPanel() {
   const [wProvider, setWProvider] = useState<PaymentType>("wave");
   const [wNumber, setWNumber] = useState("");
   const [amount, setAmount] = useState("");
-  const [payMethod, setPayMethod] = useState<PaymentType>("wave");
 
   const reload = useCallback(async () => {
     try {
@@ -126,14 +127,10 @@ export default function AccountPanel() {
     if (!n || n <= 0) { toast.error("Montant invalide."); return; }
     setBusy(true);
     try {
-      await walletDeposit(n, payMethod);
-      toast.success(`Solde rechargé de ${formatAmount(n, authProfile.currency)} 🎉`);
-      setModal(null);
-      setAmount("");
-      await reload();
-    } catch {
-      toast.error("Échec de la recharge.");
-    } finally {
+      // Recharge réelle via PawaPay (frais de service inclus dans le total).
+      await startPawapayCheckout({ purpose: "recharge", amount: n });
+    } catch (e) {
+      toast.error((e as Error).message);
       setBusy(false);
     }
   };
@@ -375,25 +372,12 @@ export default function AccountPanel() {
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">{authProfile.currency}</span>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Moyen de paiement</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {PAYMENT_CATALOG.map((p) => (
-                        <button
-                          key={p.type}
-                          onClick={() => setPayMethod(p.type)}
-                          className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all ${
-                            payMethod === p.type ? "border-emerald-500 bg-emerald-50" : "border-gray-100 hover:border-gray-300"
-                          }`}
-                        >
-                          <PaymentLogo type={p.type} className="w-8 h-8" />
-                          <span className="text-[10px] text-gray-600 leading-tight text-center">{p.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  {parseFloat(amount) > 0 && (
+                    <FeeSummary amount={parseFloat(amount)} currency={authProfile.currency} label="Montant à recharger" />
+                  )}
+                  <p className="text-[11px] text-gray-400">Le moyen de paiement (Wave, Orange, MTN…) sera choisi sur la page sécurisée PawaPay.</p>
                   <button onClick={submitDeposit} disabled={busy} className="w-full py-3 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center">
-                    {busy ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : "Recharger"}
+                    {busy ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : "Payer via Mobile Money"}
                   </button>
                 </>
               )}

@@ -112,8 +112,7 @@ export default function RegisterPage() {
       // n'est créée tant que l'utilisateur n'a pas cliqué sur le lien reçu.
       if (data.session) {
         toast.success("Compte créé avec succès 🎉");
-        const plan = new URLSearchParams(window.location.search).get("plan");
-        router.push(plan === "pro" || plan === "diaspora" ? "/dashboard/upgrade" : "/dashboard");
+        router.push("/dashboard");
       } else {
         toast.success(
           "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse."

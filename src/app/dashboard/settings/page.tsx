@@ -3,13 +3,10 @@
 import { useState, useEffect } from "react";
 import {
   Bell, Shield, Smartphone, Globe, Trash2, ChevronRight,
-  MessageCircle, Moon, Plus, Zap, Lock, Check, X,
+  MessageCircle, Moon, Plus, Check, X,
   Eye, EyeOff, AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
-import toast from "react-hot-toast";
-import { getReminderUsage, PLANS } from "@/lib/plans";
-import { getAccountPlan, setAccountPlan, countGroups } from "@/lib/db";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,11 +67,6 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  // Plan
-  const [planId, setPlanId] = useState<"free" | "pro" | "diaspora">("free");
-  const [reminders, setReminders] = useState({ used: 0, max: 10 });
-  const [groupCount, setGroupCount] = useState(0);
-
   // Notifications
   const [notif, setNotif] = useState<NotifSettings>(DEFAULT_NOTIF);
 
@@ -111,10 +103,6 @@ export default function SettingsPage() {
 
     const pm = localStorage.getItem("tontiflow_payment_methods");
     if (pm) setMethods(JSON.parse(pm));
-
-    getAccountPlan().then(setPlanId);
-    setReminders(getReminderUsage());
-    countGroups().then(setGroupCount);
 
     const fa = localStorage.getItem("tontiflow_2fa");
     if (fa) setTwoFAEnabled(fa === "true");
@@ -172,62 +160,6 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
         <p className="text-gray-500 mt-0.5">Personnalisez votre expérience TontiFlow</p>
-      </div>
-
-      {/* ── Plan ── */}
-      <div className={`rounded-2xl p-5 border ${planId === "free" ? "bg-gray-50 border-gray-200" : "gradient-dark border-0"}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${planId === "free" ? "bg-white border border-gray-200" : "bg-white/10"}`}>
-              <Zap className={`w-5 h-5 ${planId === "free" ? "text-gray-500" : "text-emerald-400"}`} fill={planId !== "free" ? "currentColor" : "none"} />
-            </div>
-            <div>
-              <p className={`text-sm font-bold ${planId === "free" ? "text-gray-900" : "text-white"}`}>Plan {PLANS[planId].name}</p>
-              <p className={`text-xs mt-0.5 ${planId === "free" ? "text-gray-500" : "text-emerald-300"}`}>{PLANS[planId].price}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link href="/dashboard/upgrade" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl gradient-emerald text-white text-xs font-semibold hover:opacity-90">
-              <Zap className="w-3.5 h-3.5" fill="white" /> {planId === "free" ? "Passer au Pro" : "Changer de formule"}
-            </Link>
-            {planId !== "free" && (
-              <button
-                onClick={async () => {
-                  if (!confirm("Revenir au plan Gratuit ? Les limites du plan Gratuit s'appliqueront.")) return;
-                  await setAccountPlan("free");
-                  setPlanId("free");
-                  toast.success("Vous êtes repassé au plan Gratuit.");
-                }}
-                className="px-3 py-2 rounded-xl bg-white/10 text-white text-xs font-semibold hover:bg-white/20 border border-white/20"
-              >
-                Repasser en Gratuit
-              </button>
-            )}
-          </div>
-        </div>
-        {planId === "free" && (
-          <div className="mt-4 grid sm:grid-cols-2 gap-3">
-            {[
-              { label: "Groupes créés", used: groupCount, max: PLANS.free.maxGroups },
-              { label: "Rappels WhatsApp", used: reminders.used, max: reminders.max, sub: "ce mois" },
-            ].map(({ label, used, max, sub }) => (
-              <div key={label} className="bg-white rounded-xl p-3 border border-gray-100">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-gray-600">{label}</span>
-                  {used >= max && <Lock className="w-3.5 h-3.5 text-orange-500" />}
-                </div>
-                <div className="flex items-end justify-between mb-1.5">
-                  <span className="text-lg font-bold text-gray-900">{used}</span>
-                  <span className="text-xs text-gray-400">/ {max} {sub ?? "max"}</span>
-                </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${used >= max ? "bg-orange-400" : "bg-emerald-500"}`}
-                    style={{ width: `${Math.min((used / max) * 100, 100)}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ── Notifications ── */}

@@ -1,155 +1,76 @@
 import Link from "next/link";
-import { Check, Zap, Star } from "lucide-react";
+import { Check, Percent, ArrowRight } from "lucide-react";
 
-const plans = [
-  {
-    name: "Gratuit",
-    price: "0",
-    currency: "FCFA",
-    period: "/mois",
-    description: "Parfait pour démarrer et tester TontiFlow.",
-    features: [
-      "3 groupes tontine max",
-      "Jusqu'à 10 membres / groupe",
-      "10 rappels WhatsApp / mois",
-      "Tableau de bord basique",
-      "Historique 3 mois",
-    ],
-    cta: "Commencer gratuitement",
-    href: "/auth/register",
-    ctaStyle: "border border-gray-200 text-gray-800 hover:border-emerald-500 hover:text-emerald-600",
-    popular: false,
-  },
-  {
-    name: "Pro",
-    price: "7 500",
-    currency: "FCFA",
-    period: "/mois",
-    description: "Pour les associations et les commerçants actifs.",
-    features: [
-      "Groupes illimités",
-      "Membres illimités",
-      "Rappels WhatsApp illimités",
-      "Rotation automatique avancée",
-      "Historique complet",
-      "Rapports et statistiques",
-      "Support prioritaire",
-    ],
-    cta: "Essai gratuit 7 jours",
-    href: "/auth/register?plan=pro",
-    ctaStyle: "text-white gradient-emerald shadow-lg shadow-emerald-200 hover:opacity-90",
-    popular: true,
-  },
-  {
-    name: "Diaspora",
-    price: "13 000",
-    currency: "FCFA",
-    period: "/mois",
-    description: "Conçu pour les transferts Europe ↔ Afrique.",
-    features: [
-      "Tout le plan Pro",
-      "Paiements par carte bancaire",
-      "Transferts diaspora",
-      "Multi-devises (EUR, USD, FCFA)",
-      "Assistant IA financier",
-      "Score de confiance membres",
-      "Gestionnaire de compte dédié",
-    ],
-    cta: "Essai gratuit 7 jours",
-    href: "/auth/register?plan=diaspora",
-    ctaStyle: "text-white gradient-emerald shadow-md shadow-emerald-200 hover:opacity-90",
-    popular: false,
-  },
+const tiers = [
+  { range: "1 000 – 20 000 FCFA", rate: "5%", example: "10 000 → 500 FCFA de frais" },
+  { range: "20 001 – 100 000 FCFA", rate: "4%", example: "50 000 → 2 000 FCFA de frais" },
+  { range: "Plus de 100 000 FCFA", rate: "3%", example: "200 000 → 6 000 FCFA de frais" },
+];
+
+const perks = [
+  "Aucun abonnement, aucun frais fixe",
+  "Tontines et membres illimités",
+  "Rappels WhatsApp inclus",
+  "Vous ne payez qu'un petit frais de service par dépôt",
 ];
 
 export default function Pricing() {
   return (
     <section id="pricing" className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <div className="text-center max-w-2xl mx-auto mb-14">
           <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-sm font-semibold mb-4">
-            Tarifs
+            Tarification simple
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
-            Des prix <span className="text-emerald-600">accessibles</span> à tous
+            Pas d&apos;abonnement. <span className="text-emerald-600">Juste un petit frais</span> par dépôt.
           </h2>
           <p className="mt-4 text-gray-500 text-lg">
-            Commencez gratuitement. Évoluez quand vous êtes prêt.
+            TontiFlow est gratuit à l&apos;usage : un frais de service transparent est prélevé uniquement sur les dépôts.
           </p>
         </div>
 
-        {/* Plans */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan) => (
+        {/* Tiers */}
+        <div className="grid md:grid-cols-3 gap-6 mb-10">
+          {tiers.map((t, i) => (
             <div
-              key={plan.name}
-              className={`relative rounded-2xl p-8 flex flex-col ${
-                plan.popular
-                  ? "gradient-dark text-white shadow-2xl shadow-emerald-900/30 scale-105"
-                  : "bg-white border border-gray-100 hover:shadow-md transition-shadow"
-              }`}
+              key={t.range}
+              className={`rounded-2xl p-7 border ${i === 1 ? "gradient-dark text-white shadow-xl" : "bg-white border-gray-100 shadow-sm"}`}
             >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-emerald-400 text-emerald-900 text-xs font-bold shadow-md">
-                    <Star className="w-3 h-3" fill="currentColor" />
-                    Le plus populaire
-                  </span>
-                </div>
-              )}
-
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  {plan.popular && (
-                    <Zap className="w-4 h-4 text-emerald-400" fill="currentColor" />
-                  )}
-                  <h3 className={`text-xl font-bold ${plan.popular ? "text-white" : "text-gray-900"}`}>
-                    {plan.name}
-                  </h3>
-                </div>
-                <div className="flex items-end gap-1 mt-3">
-                  <span className={`text-4xl font-bold ${plan.popular ? "text-white" : "text-gray-900"}`}>
-                    {plan.price}
-                  </span>
-                  <span className={`text-sm pb-1.5 ${plan.popular ? "text-emerald-300" : "text-gray-400"}`}>
-                    {plan.currency}{plan.period}
-                  </span>
-                </div>
-                <p className={`text-sm mt-2 ${plan.popular ? "text-emerald-200" : "text-gray-500"}`}>
-                  {plan.description}
-                </p>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${i === 1 ? "bg-white/10" : "bg-emerald-50"}`}>
+                <Percent className={`w-5 h-5 ${i === 1 ? "text-emerald-300" : "text-emerald-600"}`} />
               </div>
-
-              <ul className="space-y-3 mb-8 flex-1">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      plan.popular ? "bg-emerald-500/30" : "bg-emerald-100"
-                    }`}>
-                      <Check className={`w-3 h-3 ${plan.popular ? "text-emerald-300" : "text-emerald-600"}`} />
-                    </div>
-                    <span className={`text-sm ${plan.popular ? "text-emerald-100" : "text-gray-600"}`}>
-                      {feature}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={plan.href}
-                className={`w-full py-3 rounded-xl text-sm font-semibold text-center transition-all ${plan.ctaStyle}`}
-              >
-                {plan.cta}
-              </Link>
+              <p className={`text-4xl font-bold ${i === 1 ? "text-white" : "text-gray-900"}`}>{t.rate}</p>
+              <p className={`text-sm mt-2 font-medium ${i === 1 ? "text-emerald-200" : "text-gray-700"}`}>{t.range}</p>
+              <p className={`text-xs mt-3 ${i === 1 ? "text-emerald-300" : "text-gray-400"}`}>Ex. {t.example}</p>
             </div>
           ))}
         </div>
 
-        <p className="text-center text-sm text-gray-400 mt-10">
-          Les commissions de transaction (100–500 FCFA) s&apos;appliquent uniquement sur les paiements Mobile Money.
-          <br />
-          Aucun frais caché.
+        {/* Perks + CTA */}
+        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <ul className="grid sm:grid-cols-2 gap-3">
+            {perks.map((p) => (
+              <li key={p} className="flex items-center gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3 text-emerald-600" />
+                </div>
+                <span className="text-sm text-gray-700">{p}</span>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/auth/register"
+            className="shrink-0 inline-flex items-center gap-2 px-6 py-3.5 rounded-xl gradient-emerald text-white font-semibold hover:opacity-90 shadow-md shadow-emerald-200"
+          >
+            Commencer gratuitement
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        <p className="text-center text-sm text-gray-400 mt-8">
+          Le frais de service est calculé automatiquement et affiché clairement avant chaque paiement.
         </p>
       </div>
     </section>

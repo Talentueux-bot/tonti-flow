@@ -1,11 +1,9 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
-import type { PlanId } from "@/lib/plans";
 
 type CheckoutInput =
   | { purpose: "cotisation"; groupId: string; memberId: string }
-  | { purpose: "subscription"; plan: PlanId }
   | { purpose: "recharge"; amount: number };
 
 /**

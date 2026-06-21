@@ -3,15 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Plus, Users, Calendar, TrendingUp, Search, Trash2, Lock, Zap, KeyRound } from "lucide-react";
-import { PLANS } from "@/lib/plans";
-import { listGroups, deleteGroup, getAccountPlan, frequencyLabel, formatAmount, type GroupWithStats } from "@/lib/db";
+import { Plus, Users, Calendar, TrendingUp, Search, Trash2, KeyRound } from "lucide-react";
+import { listGroups, deleteGroup, frequencyLabel, formatAmount, type GroupWithStats } from "@/lib/db";
 
 export default function GroupsPage() {
   const [groups, setGroups] = useState<GroupWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [planId, setPlanId] = useState<"free" | "pro" | "diaspora">("free");
 
   const load = useCallback(async () => {
     try {
@@ -25,7 +23,6 @@ export default function GroupsPage() {
   }, []);
 
   useEffect(() => {
-    getAccountPlan().then(setPlanId);
     load();
   }, [load]);
 
@@ -49,36 +46,9 @@ export default function GroupsPage() {
   );
 
   const activeCount = filtered.filter((g) => g.status === "active").length;
-  const maxGroups = PLANS[planId].maxGroups;
-  const atLimit = maxGroups !== -1 && groups.length >= maxGroups;
 
   return (
     <div className="space-y-7 max-w-5xl">
-      {/* Limite plan gratuit */}
-      {planId === "free" && (
-        <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl border ${
-          atLimit ? "bg-orange-50 border-orange-200" : "bg-emerald-50 border-emerald-100"
-        }`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-              atLimit ? "bg-orange-100" : "bg-emerald-100"
-            }`}>
-              {atLimit ? <Lock className="w-4 h-4 text-orange-600" /> : <Zap className="w-4 h-4 text-emerald-600" />}
-            </div>
-            <div>
-              <p className={`text-sm font-semibold ${atLimit ? "text-orange-800" : "text-emerald-900"}`}>
-                Plan Gratuit — {groups.length}/{maxGroups} groupes utilisés
-              </p>
-              <p className={`text-xs mt-0.5 ${atLimit ? "text-orange-600" : "text-emerald-600"}`}>
-                {atLimit
-                  ? "Limite atteinte. Passez au plan Pro pour créer des groupes illimités."
-                  : `Il vous reste ${maxGroups - groups.length} groupe${maxGroups - groups.length > 1 ? "s" : ""} sur votre plan gratuit`}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -95,24 +65,13 @@ export default function GroupsPage() {
             <KeyRound className="w-4 h-4" />
             Rejoindre
           </Link>
-          {atLimit ? (
-            <button
-              disabled
-              title="Limite atteinte — passez au plan Pro"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-gray-400 bg-gray-100 text-sm cursor-not-allowed"
-            >
-              <Lock className="w-4 h-4" />
-              Nouvelle tontine
-            </button>
-          ) : (
-            <Link
-              href="/dashboard/groups/new"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 text-sm shadow-md shadow-emerald-200"
-            >
-              <Plus className="w-4 h-4" />
-              Nouvelle tontine
-            </Link>
-          )}
+          <Link
+            href="/dashboard/groups/new"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-white gradient-emerald hover:opacity-90 text-sm shadow-md shadow-emerald-200"
+          >
+            <Plus className="w-4 h-4" />
+            Nouvelle tontine
+          </Link>
         </div>
       </div>
 
@@ -239,20 +198,18 @@ export default function GroupsPage() {
           ))}
 
           {/* New group card */}
-          {!atLimit && (
-            <Link
-              href="/dashboard/groups/new"
-              className="bg-white rounded-2xl border-2 border-dashed border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all duration-200 flex flex-col items-center justify-center p-10 gap-3 group min-h-[240px]"
-            >
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 group-hover:bg-emerald-500 flex items-center justify-center transition-all">
-                <Plus className="w-6 h-6 text-emerald-600 group-hover:text-white transition-colors" />
-              </div>
-              <div className="text-center">
-                <p className="font-semibold text-gray-700 group-hover:text-emerald-700">Créer une tontine</p>
-                <p className="text-sm text-gray-400 mt-0.5">Invitez vos proches via WhatsApp</p>
-              </div>
-            </Link>
-          )}
+          <Link
+            href="/dashboard/groups/new"
+            className="bg-white rounded-2xl border-2 border-dashed border-gray-200 hover:border-emerald-400 hover:bg-emerald-50/30 transition-all duration-200 flex flex-col items-center justify-center p-10 gap-3 group min-h-[240px]"
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-100 group-hover:bg-emerald-500 flex items-center justify-center transition-all">
+              <Plus className="w-6 h-6 text-emerald-600 group-hover:text-white transition-colors" />
+            </div>
+            <div className="text-center">
+              <p className="font-semibold text-gray-700 group-hover:text-emerald-700">Créer une tontine</p>
+              <p className="text-sm text-gray-400 mt-0.5">Invitez vos proches via WhatsApp</p>
+            </div>
+          </Link>
         </div>
       )}
     </div>

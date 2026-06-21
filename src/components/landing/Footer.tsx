@@ -12,7 +12,7 @@ const links: Record<string, { label: string; href: string }[]> = {
     { label: "Créer une tontine", href: "/auth/register" },
     { label: "Se connecter", href: "/auth/login" },
     { label: "Contact & Support", href: "/contact" },
-    { label: "Diaspora / Transferts", href: "/auth/register?plan=diaspora" },
+    { label: "Diaspora / Transferts", href: "/auth/register" },
   ],
   Entreprise: [
     { label: "À propos", href: "/contact" },

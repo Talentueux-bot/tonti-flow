@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest, userClient } from "@/lib/supabaseServer";
 import { createPaymentPage, resolveCountry, pawapayConfigured } from "@/lib/pawapay";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { calculateFee } from "@/lib/fees";
 
 export const runtime = "nodejs";
 
 type Body = {
-  purpose: "cotisation" | "subscription" | "recharge";
+  purpose: "cotisation" | "recharge";
   groupId?: string;
   memberId?: string;
-  plan?: PlanId;
   amount?: number;
 };
 
@@ -33,7 +32,6 @@ export async function POST(req: Request) {
   let reason = "Paiement TontiFlow";
   let groupId: string | null = null;
   let memberId: string | null = null;
-  let plan: string | null = null;
 
   if (body.purpose === "cotisation") {
     if (!body.groupId || !body.memberId) {
@@ -45,13 +43,6 @@ export async function POST(req: Request) {
     reason = `Cotisation ${group.name}`.slice(0, 60);
     groupId = body.groupId;
     memberId = body.memberId;
-  } else if (body.purpose === "subscription") {
-    if (!body.plan || !(body.plan in PLANS)) {
-      return NextResponse.json({ error: "Plan invalide." }, { status: 400 });
-    }
-    amount = PLANS[body.plan].amount;
-    reason = `Abonnement ${PLANS[body.plan].name}`;
-    plan = body.plan;
   } else if (body.purpose === "recharge") {
     amount = Number(body.amount);
     if (!amount || amount <= 0) return NextResponse.json({ error: "Montant invalide." }, { status: 400 });
@@ -59,6 +50,10 @@ export async function POST(req: Request) {
   } else {
     return NextResponse.json({ error: "Purpose invalide." }, { status: 400 });
   }
+
+  // Frais de service + total à payer
+  const platformFee = calculateFee(amount);
+  const totalPaid = amount + platformFee;
 
   const depositId = crypto.randomUUID();
 
@@ -68,10 +63,11 @@ export async function POST(req: Request) {
     user_id: user.id,
     purpose: body.purpose,
     amount,
+    platform_fee: platformFee,
+    total_paid: totalPaid,
     currency,
     group_id: groupId,
     member_id: memberId,
-    plan,
     status: "PENDING",
   });
   if (insErr) return NextResponse.json({ error: "Erreur d'enregistrement." }, { status: 500 });
@@ -80,9 +76,10 @@ export async function POST(req: Request) {
   const returnUrl = `${origin}/payment/return?depositId=${depositId}`;
 
   try {
+    // On envoie le TOTAL (cotisation + frais) à PawaPay.
     const { redirectUrl } = await createPaymentPage({
       depositId,
-      amount: String(amount),
+      amount: String(totalPaid),
       currency,
       country,
       reason,
