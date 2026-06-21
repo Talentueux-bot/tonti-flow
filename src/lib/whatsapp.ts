@@ -21,6 +21,21 @@ export function reminderMessage(opts: {
   );
 }
 
+/** Message d'invitation à rejoindre une tontine (lien + code). */
+export function invitationMessage(opts: {
+  groupName: string;
+  code: string;
+  link: string;
+}): string {
+  const { groupName, code, link } = opts;
+  return (
+    `🤝 Rejoignez ma tontine « ${groupName} » sur TontiFlow !\n\n` +
+    `👉 Lien direct : ${link}\n` +
+    `🔑 Ou avec le code : ${code}\n\n` +
+    `TontiFlow — épargnez ensemble, en toute confiance.`
+  );
+}
+
 /** Lien vers un membre précis (ouvre la conversation WhatsApp). */
 export function waLink(phone: string | null | undefined, text: string): string {
   const num = sanitizePhone(phone);

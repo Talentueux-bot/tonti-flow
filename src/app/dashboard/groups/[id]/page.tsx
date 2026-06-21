@@ -15,7 +15,7 @@ import {
 } from "@/lib/db";
 import { startPawapayCheckout } from "@/lib/checkout";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { waLink, waShareLink, reminderMessage } from "@/lib/whatsapp";
+import { waLink, waShareLink, reminderMessage, invitationMessage } from "@/lib/whatsapp";
 import FeeSummary from "@/components/dashboard/FeeSummary";
 
 export default function GroupDetailPage() {
@@ -425,6 +425,17 @@ export default function GroupDetailPage() {
                 {copied ? "Copié" : "Copier"}
               </button>
             </div>
+
+            {/* Partage WhatsApp en 1 clic (lien + code pré-remplis) */}
+            <a
+              href={waShareLink(invitationMessage({ groupName: group.name, code: group.code, link: joinLink }))}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-semibold transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" fill="currentColor" />
+              Inviter via WhatsApp
+            </a>
           </div>
 
           {/* Group info */}
