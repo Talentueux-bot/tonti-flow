@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import {
-  TrendingUp, CalendarDays, Wallet, Receipt, BarChart3, ShieldAlert,
+  TrendingUp, CalendarDays, Wallet, Receipt, BarChart3, ShieldAlert, Lock,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { isAdminEmail } from "@/lib/admin";
+import { supabase } from "@/lib/supabase";
 import { getAdminRevenue, formatAmount, type AdminRevenue } from "@/lib/db";
 
 export default function AdminPage() {
@@ -16,13 +18,47 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Verrou par mot de passe (couche supplémentaire)
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [checking, setChecking] = useState(false);
+
   useEffect(() => {
-    if (!admin) { setLoading(false); return; }
+    if (typeof window !== "undefined" && sessionStorage.getItem("tontiflow_admin_ok") === "1") {
+      setUnlocked(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!admin || !unlocked) { setLoading(false); return; }
+    setLoading(true);
     getAdminRevenue()
       .then(setData)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [admin]);
+  }, [admin, unlocked]);
+
+  const submitPwd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pwd) return;
+    setChecking(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ password: pwd }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(j.error || "Mot de passe incorrect."); return; }
+      sessionStorage.setItem("tontiflow_admin_ok", "1");
+      setUnlocked(true);
+    } catch {
+      toast.error("Erreur de vérification.");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   if (!admin) {
     return (
@@ -35,6 +71,37 @@ export default function AdminPage() {
         <Link href="/dashboard" className="inline-block px-5 py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold">
           Retour au tableau de bord
         </Link>
+      </div>
+    );
+  }
+
+  if (!unlocked) {
+    return (
+      <div className="max-w-sm mx-auto py-16">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-7 h-7 text-emerald-600" />
+          </div>
+          <h1 className="text-lg font-bold text-gray-900 mb-1">Espace administrateur</h1>
+          <p className="text-sm text-gray-500 mb-6">Saisissez le mot de passe administrateur pour continuer.</p>
+          <form onSubmit={submitPwd} className="space-y-3">
+            <input
+              type="password"
+              value={pwd}
+              onChange={(e) => setPwd(e.target.value)}
+              placeholder="Mot de passe"
+              autoFocus
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-center"
+            />
+            <button
+              type="submit"
+              disabled={checking || !pwd}
+              className="w-full py-3 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 disabled:opacity-60 flex items-center justify-center"
+            >
+              {checking ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : "Déverrouiller"}
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
