@@ -393,10 +393,11 @@ export type AdminRevenue = {
   total: number;
   tx_count: number;
   total_processed: number;
+  active_groups: number;
 };
 
 export async function getAdminRevenue(): Promise<AdminRevenue> {
-  const { data, error } = await supabase.rpc("admin_revenue");
+  const { data, error } = await supabase.rpc("admin_overview");
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
   return {
@@ -405,7 +406,19 @@ export async function getAdminRevenue(): Promise<AdminRevenue> {
     total: Number(row?.total ?? 0),
     tx_count: Number(row?.tx_count ?? 0),
     total_processed: Number(row?.total_processed ?? 0),
+    active_groups: Number(row?.active_groups ?? 0),
   };
+}
+
+export type DailyRevenue = { day: string; revenue: number };
+
+export async function getAdminRevenueDaily(days = 14): Promise<DailyRevenue[]> {
+  const { data, error } = await supabase.rpc("admin_revenue_daily", { p_days: days });
+  if (error) throw error;
+  return (data ?? []).map((r: { day: string; revenue: number }) => ({
+    day: r.day,
+    revenue: Number(r.revenue),
+  }));
 }
 
 export async function getContributions() {

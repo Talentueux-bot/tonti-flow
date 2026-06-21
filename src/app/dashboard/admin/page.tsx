@@ -1,22 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import {
-  TrendingUp, CalendarDays, Wallet, Receipt, BarChart3, ShieldAlert, Lock,
+  TrendingUp, CalendarDays, Wallet, Receipt, BarChart3, ShieldAlert, Lock, Users,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { isAdminEmail } from "@/lib/admin";
 import { supabase } from "@/lib/supabase";
-import { getAdminRevenue, formatAmount, type AdminRevenue } from "@/lib/db";
+import { getAdminRevenue, getAdminRevenueDaily, formatAmount, type AdminRevenue, type DailyRevenue } from "@/lib/db";
+import AdminRevenueChart from "@/components/dashboard/AdminRevenueChart";
 
 export default function AdminPage() {
   const { profile } = useAuth();
   const admin = isAdminEmail(profile.email);
   const [data, setData] = useState<AdminRevenue | null>(null);
+  const [daily, setDaily] = useState<DailyRevenue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   // Verrou par mot de passe (couche supplémentaire)
   const [unlocked, setUnlocked] = useState(false);
@@ -29,14 +32,27 @@ export default function AdminPage() {
     }
   }, []);
 
+  const refresh = useCallback(async () => {
+    try {
+      const [overview, series] = await Promise.all([getAdminRevenue(), getAdminRevenueDaily(14)]);
+      setData(overview);
+      setDaily(series);
+      setLastUpdate(new Date());
+      setError(false);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Chargement + rafraîchissement « temps réel » (toutes les 20 s)
   useEffect(() => {
     if (!admin || !unlocked) { setLoading(false); return; }
-    setLoading(true);
-    getAdminRevenue()
-      .then(setData)
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [admin, unlocked]);
+    refresh();
+    const id = setInterval(refresh, 20000);
+    return () => clearInterval(id);
+  }, [admin, unlocked, refresh]);
 
   const submitPwd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,20 +129,31 @@ export default function AdminPage() {
     { label: "Revenus totaux (frais)", value: formatAmount(data?.total ?? 0, cur), icon: Wallet, color: "bg-purple-50 text-purple-600" },
     { label: "Nombre de transactions", value: String(data?.tx_count ?? 0), icon: Receipt, color: "bg-orange-50 text-orange-600" },
     { label: "Montant total traité", value: formatAmount(data?.total_processed ?? 0, cur), icon: BarChart3, color: "bg-gray-100 text-gray-700" },
+    { label: "Groupes actifs", value: String(data?.active_groups ?? 0), icon: Users, color: "bg-teal-50 text-teal-600" },
   ];
 
   return (
     <div className="space-y-7 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Administration · Revenus</h1>
-        <p className="text-gray-500 mt-0.5">Frais de service collectés sur les dépôts confirmés.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Administration · Revenus</h1>
+          <p className="text-gray-500 mt-0.5">Frais de service collectés sur les dépôts confirmés.</p>
+        </div>
+        <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+          </span>
+          Temps réel{lastUpdate ? ` · maj ${lastUpdate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : ""}
+        </div>
       </div>
 
       {error ? (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-sm text-red-700">
-          Impossible de charger les revenus. Vérifiez que la migration des frais a bien été appliquée.
+          Impossible de charger les données. Vérifiez que les migrations admin ont bien été appliquées.
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {cards.map((c) => (
             <div key={c.label} className="bg-white rounded-2xl p-5 border border-gray-100">
@@ -138,6 +165,22 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
+
+        {/* Graphique des revenus par jour (14 derniers jours) */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-semibold text-gray-900">Revenus par jour · 14 derniers jours</h2>
+            <span className="text-xs text-gray-400">en {cur}</span>
+          </div>
+          {loading && daily.length === 0 ? (
+            <div className="h-44 flex items-center justify-center">
+              <span className="w-7 h-7 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+            </div>
+          ) : (
+            <AdminRevenueChart data={daily} currency={cur} />
+          )}
+        </div>
+        </>
       )}
 
       <p className="text-xs text-gray-400">
