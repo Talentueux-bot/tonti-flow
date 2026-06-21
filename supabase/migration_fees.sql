@@ -14,7 +14,7 @@ create or replace function public.admin_revenue()
 returns table (today numeric, month numeric, total numeric, tx_count bigint, total_processed numeric)
 language plpgsql security definer set search_path = public as $$
 begin
-  if lower(coalesce(auth.jwt() ->> 'email', '')) not in ('sonfackdiviol45@gmail.com') then
+  if lower(coalesce(auth.jwt() ->> 'email', '')) not in ('raouljiokeng@gmail.com', 'sonfackdiviol45@gmail.com') then
     raise exception 'NOT_ADMIN';
   end if;
 
