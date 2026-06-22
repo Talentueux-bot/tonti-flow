@@ -95,7 +95,14 @@ export default function AccountPanel() {
     setBusy(true);
     try {
       if (file) await uploadIdDocument(file, docType);
-      await updateVerification({ date_of_birth: dob, name_verified: true });
+      // Vérifié immédiatement côté utilisateur ; validation réelle automatique
+      // après 5 min côté système (invisible pour l'utilisateur).
+      await updateVerification({
+        date_of_birth: dob,
+        name_verified: true,
+        verification_status: "pending",
+        verification_submitted_at: new Date().toISOString(),
+      });
       toast.success("Compte vérifié ✅");
       setModal(null);
       setFile(null);

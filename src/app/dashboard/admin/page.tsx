@@ -148,6 +148,22 @@ export default function AdminPage() {
         </div>
       </div>
 
+      <Link
+        href="/dashboard/admin/verifications"
+        className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gray-100 p-4 hover:border-emerald-300 hover:shadow-sm transition-all"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <ShieldAlert className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">Vérifications des comptes</p>
+            <p className="text-xs text-gray-400">Examiner les pièces d&apos;identité fournies par les utilisateurs</p>
+          </div>
+        </div>
+        <span className="text-emerald-600 text-sm font-semibold">Ouvrir →</span>
+      </Link>
+
       {error ? (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-sm text-red-700">
           Impossible de charger les données. Vérifiez que les migrations admin ont bien été appliquées.

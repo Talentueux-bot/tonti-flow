@@ -325,6 +325,8 @@ export async function updateVerification(fields: {
   name_verified?: boolean;
   id_document_type?: string;
   id_document_path?: string;
+  verification_status?: string;
+  verification_submitted_at?: string;
 }): Promise<void> {
   const uid = await currentUserId();
   if (!uid) throw new Error("Non connecté");
