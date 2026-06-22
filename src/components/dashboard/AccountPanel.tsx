@@ -16,6 +16,7 @@ import {
 } from "@/lib/db";
 import { startPawapayCheckout } from "@/lib/checkout";
 import FeeSummary from "@/components/dashboard/FeeSummary";
+import { supabase } from "@/lib/supabase";
 
 const DOC_TYPES = [
   { value: "cni", label: "Carte d'identité" },
@@ -43,6 +44,17 @@ export default function AccountPanel() {
 
   const reload = useCallback(async () => {
     try {
+      // Déclenche la validation auto si la vérification attend depuis > 5 min.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await fetch("/api/verification/self-check", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+        }
+      } catch { /* non bloquant */ }
+
       const [p, t] = await Promise.all([getMyProfile(), listWalletTransactions()]);
       setProfile(p);
       setTxs(t);
@@ -66,14 +78,20 @@ export default function AccountPanel() {
     );
   }
 
-  const securityDone = profile.name_verified && !!profile.date_of_birth && !!profile.id_document_path;
+  const vstatus = profile.verification_status ?? "unverified";
+  const securityDone = vstatus === "approved";
   const gainsDone = !!profile.withdrawal_number;
+  const securityDetail =
+    vstatus === "pending" ? "Vérification en cours — vous recevrez la réponse par email sous quelques minutes."
+    : vstatus === "rejected" ? "Vérification refusée. Renvoyez une photo nette de votre pièce d'identité."
+    : vstatus === "approved" ? "Votre identité est vérifiée."
+    : "Vérifiez votre nom complet, votre date de naissance et ajoutez une pièce d'identité.";
   const steps = [
     { key: "account", title: "Compte créé", detail: "Votre compte TontiFlow est actif.", done: true, action: null as Modal },
     {
       key: "security",
       title: "Sécurité du compte",
-      detail: "Vérifiez votre nom complet, votre date de naissance et ajoutez une pièce d'identité.",
+      detail: securityDetail,
       done: securityDone,
       action: "verify" as Modal,
     },
@@ -95,15 +113,14 @@ export default function AccountPanel() {
     setBusy(true);
     try {
       if (file) await uploadIdDocument(file, docType);
-      // Vérifié immédiatement côté utilisateur ; validation réelle automatique
-      // après 5 min côté système (invisible pour l'utilisateur).
+      // L'utilisateur passe « en attente de validation » : l'admin a 5 min pour
+      // réagir, sinon validation automatique. La réponse est envoyée par email.
       await updateVerification({
         date_of_birth: dob,
-        name_verified: true,
         verification_status: "pending",
         verification_submitted_at: new Date().toISOString(),
       });
-      toast.success("Compte vérifié ✅");
+      toast.success("Pièce envoyée — vérification en cours ⏳");
       setModal(null);
       setFile(null);
       await reload();
@@ -195,12 +212,16 @@ export default function AccountPanel() {
               </div>
               {s.done ? (
                 <span className="text-[11px] font-semibold text-emerald-600 shrink-0 mt-1">Terminé</span>
+              ) : s.key === "security" && vstatus === "pending" ? (
+                <span className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-50 text-orange-600 text-xs font-semibold mt-0.5">
+                  <Circle className="w-3 h-3" /> En attente
+                </span>
               ) : s.action ? (
                 <button
                   onClick={() => setModal(s.action)}
                   className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg gradient-emerald text-white text-xs font-semibold hover:opacity-90"
                 >
-                  {s.key === "security" ? "Vérifier" : "Ajouter"}
+                  {s.key === "security" ? (vstatus === "rejected" ? "Renvoyer" : "Vérifier") : "Ajouter"}
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               ) : null}

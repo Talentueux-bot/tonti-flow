@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import {
-  ArrowLeft, ShieldAlert, FileText, CheckCircle2, Clock, ExternalLink,
+  ArrowLeft, ShieldAlert, FileText, CheckCircle2, Clock, ExternalLink, Check, X,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { isAdminEmail } from "@/lib/admin";
@@ -86,6 +87,22 @@ export default function AdminVerificationsPage() {
     );
   }
 
+  const act = async (userId: string, action: "approve" | "reject") => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/verifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ userId, action }),
+      });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); toast.error(j.error || "Échec."); return; }
+      toast.success(action === "approve" ? "Compte validé — email envoyé ✅" : "Compte rejeté — email envoyé");
+      load();
+    } catch {
+      toast.error("Erreur.");
+    }
+  };
+
   const isApproved = (it: Item) => {
     if (it.verification_status === "approved") return true;
     if (it.verification_submitted_at) {
@@ -144,18 +161,38 @@ export default function AdminVerificationsPage() {
                     {it.verification_submitted_at ? ` · soumis le ${new Date(it.verification_submitted_at).toLocaleString("fr-FR")}` : ""}
                   </p>
                 </div>
-                {it.documentUrl ? (
-                  <a
-                    href={it.documentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-50"
-                  >
-                    <FileText className="w-4 h-4" /> Voir la pièce <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                ) : (
-                  <span className="shrink-0 text-xs text-gray-400">Aucune pièce</span>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {it.documentUrl ? (
+                    <a
+                      href={it.documentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-50"
+                    >
+                      <FileText className="w-4 h-4" /> Voir la pièce <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-gray-400">Aucune pièce</span>
+                  )}
+                  {it.verification_status === "pending" && !approved && (
+                    <>
+                      <button
+                        onClick={() => act(it.id, "approve")}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90"
+                        title="Approuver"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => act(it.id, "reject")}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50"
+                        title="Rejeter"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}

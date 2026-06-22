@@ -293,6 +293,8 @@ export type MyProfile = {
   withdrawal_number: string | null;
   name_verified: boolean;
   balance: number;
+  verification_status: string | null;
+  verification_submitted_at: string | null;
 };
 
 export async function getMyProfile(): Promise<MyProfile | null> {
