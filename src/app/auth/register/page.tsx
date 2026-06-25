@@ -92,6 +92,8 @@ export default function RegisterPage() {
         email: email.trim(),
         password,
         options: {
+          // Le lien de confirmation renverra ici (sur le domaine d'inscription).
+          emailRedirectTo: `${window.location.origin}/auth/confirmed`,
           data: {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
