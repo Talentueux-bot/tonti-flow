@@ -114,10 +114,8 @@ export default function RegisterPage() {
         toast.success("Compte créé avec succès 🎉");
         router.push("/dashboard");
       } else {
-        toast.success(
-          "Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse."
-        );
-        router.push("/auth/login");
+        // Confirmation par email requise → page de remerciement + instructions.
+        router.push(`/auth/welcome?email=${encodeURIComponent(email.trim())}`);
       }
     } catch {
       toast.error("Une erreur est survenue. Réessayez.");

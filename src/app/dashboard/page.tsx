@@ -7,6 +7,7 @@ import {
   Plus, CheckCircle,
 } from "lucide-react";
 import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
+import VerificationBanner from "@/components/dashboard/VerificationBanner";
 import { getDashboardStats, frequencyLabel, formatAmount, type DashboardStats } from "@/lib/db";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -52,6 +53,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 max-w-6xl">
+      {/* Bannière de vérification (compte à valider) */}
+      <VerificationBanner />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <DashboardGreeting />
