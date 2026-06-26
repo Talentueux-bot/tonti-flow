@@ -464,9 +464,24 @@ export default function GroupDetailPage() {
               <CalendarClock className="w-4 h-4 text-emerald-600" />
               Versement du pot
             </h2>
-            <p className="text-xs text-gray-400 mb-3">
-              Tour {group.current_round} · {group.payouts_done} versement{group.payouts_done > 1 ? "s" : ""} effectué{group.payouts_done > 1 ? "s" : ""}
+            <p className="text-xs text-gray-400 mb-2">
+              Tour {group.current_round} / {members.length} · {group.payouts_done} encaissement{group.payouts_done > 1 ? "s" : ""}
             </p>
+
+            {group.status === "completed" ? (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-sm text-emerald-700 font-medium">
+                🎉 Tontine terminée — tous les membres ont encaissé le pot.
+              </div>
+            ) : (
+            <>
+            {(() => {
+              const beneficiary = members.find((m) => m.position === group.current_round);
+              return beneficiary ? (
+                <p className="text-sm text-gray-700 mb-3">
+                  Bénéficiaire de ce tour : <strong>{beneficiary.name}{beneficiary.is_owner ? " (vous)" : ""}</strong>
+                </p>
+              ) : null;
+            })()}
 
             {group.owner_id === user?.id ? (
               group.payouts_done > 0 ? (
@@ -505,13 +520,15 @@ export default function GroupDetailPage() {
               </p>
             )}
 
-            {group.owner_id === user?.id && group.status === "active" && (
+            {group.owner_id === user?.id && (
               <button
                 onClick={confirmPayout}
                 className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-50"
               >
                 <Send className="w-4 h-4" /> Versement effectué — tour suivant
               </button>
+            )}
+            </>
             )}
           </div>
 

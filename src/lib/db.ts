@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { nextPayoutFrom } from "@/lib/schedule";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -205,20 +206,40 @@ export async function updatePayoutAt(groupId: string, payoutAt: string | null): 
   if (error) throw error;
 }
 
-/** Marque le versement comme effectué : verrouille le calendrier et passe au tour suivant. */
+/** Marque le versement comme effectué : passe au tour suivant, planifie la prochaine
+ *  échéance, et termine la tontine quand tous les membres ont encaissé. */
 export async function markPayoutDone(groupId: string): Promise<void> {
   const { data: g } = await supabase
     .from("groups")
-    .select("current_round, payouts_done, max_members")
+    .select("current_round, payouts_done, frequency, payout_at")
     .eq("id", groupId)
     .maybeSingle();
   if (!g) throw new Error("Tontine introuvable.");
+
+  const { count } = await supabase
+    .from("group_members")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId);
+  const memberCount = count ?? 0;
+
   const done = (g.payouts_done ?? 0) + 1;
   const nextRound = (g.current_round ?? 1) + 1;
-  const status = done >= (g.max_members ?? 0) ? "completed" : "active";
+
+  if (memberCount > 0 && done >= memberCount) {
+    // Tout le monde a encaissé → tontine terminée.
+    const { error } = await supabase
+      .from("groups")
+      .update({ payouts_done: done, current_round: nextRound, status: "completed", payout_at: null })
+      .eq("id", groupId);
+    if (error) throw error;
+    return;
+  }
+
+  const base = g.payout_at ? new Date(g.payout_at) : new Date();
+  const next = nextPayoutFrom(base, g.frequency ?? "monthly");
   const { error } = await supabase
     .from("groups")
-    .update({ payouts_done: done, current_round: nextRound, status })
+    .update({ payouts_done: done, current_round: nextRound, payout_at: next.toISOString() })
     .eq("id", groupId);
   if (error) throw error;
 }
