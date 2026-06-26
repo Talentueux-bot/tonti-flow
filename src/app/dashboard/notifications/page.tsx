@@ -2,88 +2,52 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle, Clock, Users, PartyPopper } from "lucide-react";
-import { getDashboardStats } from "@/lib/db";
-import { useAuth } from "@/components/auth/AuthProvider";
+import {
+  Bell, Users, PartyPopper, Wallet, ShieldCheck, Gift,
+} from "lucide-react";
+import { listNotifications, markAllNotificationsRead, type Notification } from "@/lib/db";
 
-type Notif = {
-  id: string;
-  icon: typeof Bell;
-  title: string;
-  detail: string;
-  color: string;
-  href?: string;
+const ICONS: Record<string, { icon: typeof Bell; color: string }> = {
+  payment: { icon: Wallet, color: "text-emerald-600 bg-emerald-50" },
+  join: { icon: Users, color: "text-blue-600 bg-blue-50" },
+  turn: { icon: Gift, color: "text-purple-600 bg-purple-50" },
+  verification: { icon: ShieldCheck, color: "text-amber-600 bg-amber-50" },
+  info: { icon: PartyPopper, color: "text-emerald-600 bg-emerald-50" },
 };
 
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "à l'instant";
+  if (m < 60) return `il y a ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.floor(h / 24);
+  return `il y a ${d} j`;
+}
+
 export default function NotificationsPage() {
-  const { profile } = useAuth();
-  const [notifs, setNotifs] = useState<Notif[]>([]);
+  const [notifs, setNotifs] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDashboardStats()
-      .then((s) => {
-        const list: Notif[] = [];
-
-        // Bienvenue
-        list.push({
-          id: "welcome",
-          icon: PartyPopper,
-          title: `Bienvenue sur TontiFlow, ${profile.firstName || profile.fullName} 🎉`,
-          detail: "Créez votre première tontine et invitez vos proches pour commencer.",
-          color: "text-emerald-600 bg-emerald-50",
-          href: "/dashboard/groups/new",
-        });
-
-        // Cotisations en attente par groupe
-        s.groups.forEach((g) => {
-          const pending = g.memberCount - g.paidCount;
-          if (pending > 0) {
-            list.push({
-              id: `pending-${g.id}`,
-              icon: Clock,
-              title: `${pending} cotisation${pending > 1 ? "s" : ""} en attente`,
-              detail: `Tontine « ${g.name} » — ${g.paidCount}/${g.memberCount} membre(s) ont payé.`,
-              color: "text-orange-600 bg-orange-50",
-              href: `/dashboard/groups/${g.id}`,
-            });
-          } else if (g.memberCount > 0) {
-            list.push({
-              id: `done-${g.id}`,
-              icon: CheckCircle,
-              title: `Toutes les cotisations sont payées 🎉`,
-              detail: `Tontine « ${g.name} » — ${g.memberCount}/${g.memberCount} à jour.`,
-              color: "text-emerald-600 bg-emerald-50",
-              href: `/dashboard/groups/${g.id}`,
-            });
-          }
-
-          if (g.memberCount <= 1) {
-            list.push({
-              id: `invite-${g.id}`,
-              icon: Users,
-              title: "Invitez des membres",
-              detail: `La tontine « ${g.name} » n'a pas encore de membres. Partagez le lien d'invitation.`,
-              color: "text-blue-600 bg-blue-50",
-              href: `/dashboard/groups/${g.id}`,
-            });
-          }
-        });
-
+    listNotifications()
+      .then((list) => {
         setNotifs(list);
+        if (list.some((n) => !n.read)) markAllNotificationsRead().catch(() => {});
       })
       .finally(() => setLoading(false));
-  }, [profile.firstName, profile.fullName]);
+  }, []);
 
   return (
-    <div className="space-y-7 max-w-2xl">
+    <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
           <Bell className="w-5 h-5 text-emerald-600" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
-          <p className="text-gray-500 mt-0.5">Vos rappels et activités récentes</p>
+          <p className="text-gray-500 mt-0.5 text-sm">Vos paiements, adhésions et activités</p>
         </div>
       </div>
 
@@ -97,24 +61,30 @@ export default function NotificationsPage() {
             <Bell className="w-7 h-7 text-gray-300" />
           </div>
           <p className="text-sm font-semibold text-gray-700 mb-1">Aucune notification</p>
-          <p className="text-xs text-gray-400">Vous êtes à jour. Vos rappels apparaîtront ici.</p>
+          <p className="text-xs text-gray-400">Vos paiements et activités apparaîtront ici.</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
           {notifs.map((n) => {
+            const meta = ICONS[n.type] ?? ICONS.info;
+            const Icon = meta.icon;
             const content = (
-              <div className="flex items-start gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
-                <div className={`w-9 h-9 rounded-xl ${n.color} flex items-center justify-center shrink-0`}>
-                  <n.icon className="w-4 h-4" />
+              <div className={`flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-4 transition-colors ${n.read ? "" : "bg-emerald-50/40"}`}>
+                <div className={`w-9 h-9 rounded-xl ${meta.color} flex items-center justify-center shrink-0`}>
+                  <Icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{n.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{n.detail}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-gray-900">{n.title}</p>
+                    {!n.read && <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />}
+                  </div>
+                  {n.detail && <p className="text-xs text-gray-500 mt-0.5 break-words">{n.detail}</p>}
+                  <p className="text-[11px] text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
                 </div>
               </div>
             );
             return n.href ? (
-              <Link key={n.id} href={n.href} className="block">{content}</Link>
+              <Link key={n.id} href={n.href} className="block hover:bg-gray-50">{content}</Link>
             ) : (
               <div key={n.id}>{content}</div>
             );

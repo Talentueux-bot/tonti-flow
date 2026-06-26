@@ -1,6 +1,7 @@
 // Serveur uniquement — traitement des vérifications de compte (KYC).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendEmail, verificationApprovedHtml, verificationRejectedHtml } from "@/lib/email";
+import { notify } from "@/lib/notify";
 
 const FIVE_MIN_MS = 5 * 60 * 1000;
 
@@ -14,6 +15,12 @@ async function recipient(admin: SupabaseClient, userId: string): Promise<{ email
 /** Approuve une vérification + email personnalisé. */
 export async function approveVerification(admin: SupabaseClient, userId: string): Promise<void> {
   await admin.from("profiles").update({ verification_status: "approved", name_verified: true }).eq("id", userId);
+  await notify(admin, userId, {
+    type: "verification",
+    title: "Compte vérifié ✅",
+    detail: "Votre identité a été validée. Vous pouvez profiter pleinement de TontiFlow.",
+    href: "/dashboard/profile",
+  });
   const { email, name } = await recipient(admin, userId);
   if (email) await sendEmail(email, "Votre compte TontiFlow est vérifié ✅", verificationApprovedHtml(name));
 }
@@ -21,6 +28,12 @@ export async function approveVerification(admin: SupabaseClient, userId: string)
 /** Rejette une vérification + email personnalisé. */
 export async function rejectVerification(admin: SupabaseClient, userId: string): Promise<void> {
   await admin.from("profiles").update({ verification_status: "rejected", name_verified: false }).eq("id", userId);
+  await notify(admin, userId, {
+    type: "verification",
+    title: "Vérification à refaire",
+    detail: "Votre pièce n'a pas pu être validée. Renvoyez une photo nette depuis votre profil.",
+    href: "/dashboard/profile",
+  });
   const { email, name } = await recipient(admin, userId);
   if (email) await sendEmail(email, "Vérification TontiFlow — action requise", verificationRejectedHtml(name));
 }

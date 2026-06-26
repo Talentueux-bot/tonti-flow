@@ -6,7 +6,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <AuthProvider>
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
-        <main className="flex-1 min-w-0 lg:p-8 p-4 pt-20 lg:pt-8 overflow-y-auto">
+        <main className="flex-1 min-w-0 lg:p-8 p-4 pt-20 lg:pt-8 pb-24 lg:pb-8 overflow-y-auto">
           {children}
         </main>
       </div>

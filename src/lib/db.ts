@@ -482,6 +482,41 @@ export async function getAdminRevenueDaily(days = 14): Promise<DailyRevenue[]> {
   }));
 }
 
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+export type Notification = {
+  id: string;
+  type: string;
+  title: string;
+  detail: string | null;
+  href: string | null;
+  read: boolean;
+  created_at: string;
+};
+
+export async function listNotifications(): Promise<Notification[]> {
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as Notification[];
+}
+
+export async function unreadNotificationCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("read", false);
+  if (error) return 0;
+  return count ?? 0;
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await supabase.from("notifications").update({ read: true }).eq("read", false);
+}
+
 export async function getContributions() {
   const { data, error } = await supabase
     .from("contributions")

@@ -18,7 +18,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getDashboardStats } from "@/lib/db";
+import { unreadNotificationCount } from "@/lib/db";
 import { isAdminEmail } from "@/lib/admin";
 
 const navItems = [
@@ -27,6 +27,15 @@ const navItems = [
   { href: "/dashboard/payments", icon: CreditCard, label: "Paiements" },
   { href: "/dashboard/profile", icon: User, label: "Profil" },
   { href: "/dashboard/settings", icon: Settings, label: "Paramètres" },
+];
+
+// Navigation du bas (mobile)
+const bottomNav = [
+  { href: "/dashboard", icon: LayoutDashboard, label: "Accueil" },
+  { href: "/dashboard/groups", icon: Users, label: "Tontines" },
+  { href: "/dashboard/payments", icon: CreditCard, label: "Paiements" },
+  { href: "/dashboard/notifications", icon: Bell, label: "Alertes" },
+  { href: "/dashboard/profile", icon: User, label: "Profil" },
 ];
 
 const adminItem = { href: "/dashboard/admin", icon: ShieldCheck, label: "Admin" };
@@ -38,10 +47,8 @@ export default function Sidebar() {
   const { profile, signOut } = useAuth();
 
   useEffect(() => {
-    getDashboardStats()
-      .then((s) => setNotifCount(s.pendingDue))
-      .catch(() => {});
-  }, []);
+    unreadNotificationCount().then(setNotifCount).catch(() => {});
+  }, [pathname]);
 
   const initials =
     (profile.firstName?.[0] ?? "") + (profile.lastName?.[0] ?? "") ||
@@ -168,6 +175,32 @@ export default function Sidebar() {
           </aside>
         </div>
       )}
+
+      {/* Mobile bottom navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 px-1 pb-[env(safe-area-inset-bottom)]">
+        <div className="grid grid-cols-5">
+          {bottomNav.map(({ href, icon: Icon, label }) => {
+            const active = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`relative flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
+                  active ? "text-emerald-600" : "text-gray-400"
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {label}
+                {href === "/dashboard/notifications" && notifCount > 0 && (
+                  <span className="absolute top-1 right-1/2 translate-x-3 w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center">
+                    {notifCount > 9 ? "9+" : notifCount}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </>
   );
 }
