@@ -22,11 +22,13 @@ export async function applyIntent(client: SupabaseClient, intent: PaymentIntent)
   if (intent.applied) return;
 
   if (intent.purpose === "cotisation" && intent.group_id && intent.member_id) {
+    const { data: grp } = await client.from("groups").select("current_round").eq("id", intent.group_id).maybeSingle();
     await client.from("contributions").insert({
       group_id: intent.group_id,
       member_id: intent.member_id,
       amount: intent.amount,
       status: "paid",
+      round: grp?.current_round ?? 1,
       paid_at: new Date().toISOString(),
     });
   } else if (intent.purpose === "recharge") {

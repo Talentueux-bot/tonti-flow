@@ -18,6 +18,9 @@ export type GroupRow = {
   rotation: string;
   status: string;
   code: string;
+  current_round: number;
+  payouts_done: number;
+  payout_at: string | null;
   created_at: string;
 };
 
@@ -192,6 +195,34 @@ export async function deleteGroup(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Planifie la date/heure du versement — autorisé seulement si aucun versement n'a eu lieu. */
+export async function updatePayoutAt(groupId: string, payoutAt: string | null): Promise<void> {
+  const { data: g } = await supabase.from("groups").select("payouts_done").eq("id", groupId).maybeSingle();
+  if ((g?.payouts_done ?? 0) > 0) {
+    throw new Error("Calendrier verrouillé : un bénéficiaire a déjà reçu son versement.");
+  }
+  const { error } = await supabase.from("groups").update({ payout_at: payoutAt }).eq("id", groupId);
+  if (error) throw error;
+}
+
+/** Marque le versement comme effectué : verrouille le calendrier et passe au tour suivant. */
+export async function markPayoutDone(groupId: string): Promise<void> {
+  const { data: g } = await supabase
+    .from("groups")
+    .select("current_round, payouts_done, max_members")
+    .eq("id", groupId)
+    .maybeSingle();
+  if (!g) throw new Error("Tontine introuvable.");
+  const done = (g.payouts_done ?? 0) + 1;
+  const nextRound = (g.current_round ?? 1) + 1;
+  const status = done >= (g.max_members ?? 0) ? "completed" : "active";
+  const { error } = await supabase
+    .from("groups")
+    .update({ payouts_done: done, current_round: nextRound, status })
+    .eq("id", groupId);
+  if (error) throw error;
+}
+
 // ─── Membres ─────────────────────────────────────────────────────────────────
 
 export async function listMembers(groupId: string): Promise<MemberRow[]> {
@@ -202,11 +233,16 @@ export async function listMembers(groupId: string): Promise<MemberRow[]> {
     .order("position", { ascending: true });
   if (error) throw error;
 
+  // Statut « payé » uniquement pour le TOUR EN COURS (réinitialisé au tour suivant).
+  const { data: grp } = await supabase.from("groups").select("current_round").eq("id", groupId).maybeSingle();
+  const round = grp?.current_round ?? 1;
+
   const { data: paid } = await supabase
     .from("contributions")
     .select("member_id")
     .eq("group_id", groupId)
-    .eq("status", "paid");
+    .eq("status", "paid")
+    .eq("round", round);
   const paidSet = new Set((paid ?? []).map((p) => p.member_id));
 
   return (members ?? []).map((m) => ({ ...(m as MemberRow), paid: paidSet.has(m.id) }));

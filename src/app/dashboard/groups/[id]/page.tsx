@@ -7,10 +7,10 @@ import toast from "react-hot-toast";
 import {
   ArrowLeft, Users, Calendar, TrendingUp, MessageCircle,
   CheckCircle, Clock, Share2, Settings, Plus, Copy, Check,
-  Pencil, Save, X,
+  Pencil, Save, X, Lock, CalendarClock, Send,
 } from "lucide-react";
 import {
-  getGroup, listMembers, addMember, setMemberPaid, updateGroup,
+  getGroup, listMembers, addMember, updateGroup, updatePayoutAt, markPayoutDone,
   frequencyLabel, formatAmount, type GroupRow, type MemberRow,
 } from "@/lib/db";
 import { startPawapayCheckout } from "@/lib/checkout";
@@ -45,6 +45,11 @@ export default function GroupDetailPage() {
         setEditName(g.name);
         setEditDescription(g.description ?? "");
         setEditAmount(String(g.amount));
+        if (g.payout_at) {
+          const d = new Date(g.payout_at);
+          const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+          setPayoutInput(local);
+        }
         setMembers(await listMembers(id));
       }
     } catch {
@@ -95,15 +100,31 @@ export default function GroupDetailPage() {
     }
   };
 
-  const togglePaid = async (member: MemberRow) => {
-    if (!group) return;
-    const next = !member.paid;
-    setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, paid: next } : m)));
+  const [payoutInput, setPayoutInput] = useState("");
+  const [savingPayout, setSavingPayout] = useState(false);
+
+  const savePayout = async () => {
+    if (!payoutInput) { toast.error("Choisissez une date et une heure."); return; }
+    setSavingPayout(true);
     try {
-      await setMemberPaid(id, member.id, group.amount, next);
-    } catch {
-      toast.error("Échec de la mise à jour du paiement.");
-      setMembers((prev) => prev.map((m) => (m.id === member.id ? { ...m, paid: !next } : m)));
+      await updatePayoutAt(id, new Date(payoutInput).toISOString());
+      toast.success("Date du versement enregistrée.");
+      await reload();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSavingPayout(false);
+    }
+  };
+
+  const confirmPayout = async () => {
+    if (!confirm("Confirmer que le bénéficiaire a reçu son versement ? Cela passe au tour suivant et verrouille la date.")) return;
+    try {
+      await markPayoutDone(id);
+      toast.success("Versement enregistré — tour suivant.");
+      await reload();
+    } catch (e) {
+      toast.error((e as Error).message);
     }
   };
 
@@ -338,17 +359,16 @@ export default function GroupDetailPage() {
                         <MessageCircle className="w-3.5 h-3.5 text-green-600" fill="currentColor" />
                       </a>
                     )}
-                    <button
-                      onClick={() => togglePaid(m)}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                        m.paid ? "bg-emerald-100 hover:bg-emerald-200" : "bg-orange-100 hover:bg-orange-200"
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold ${
+                        m.paid ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-600"
                       }`}
-                      title={m.paid ? "Marquer non payé" : "Marquer payé"}
+                      title={m.paid ? "Cotisation reçue" : "En attente de paiement"}
                     >
                       {m.paid
-                        ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                        : <Clock className="w-3.5 h-3.5 text-orange-500" />}
-                    </button>
+                        ? <><CheckCircle className="w-3 h-3" /> Payé</>
+                        : <><Clock className="w-3 h-3" /> En attente</>}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -436,6 +456,63 @@ export default function GroupDetailPage() {
               <MessageCircle className="w-4 h-4" fill="currentColor" />
               Inviter via WhatsApp
             </a>
+          </div>
+
+          {/* Versement du pot (planification) */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-1">
+              <CalendarClock className="w-4 h-4 text-emerald-600" />
+              Versement du pot
+            </h2>
+            <p className="text-xs text-gray-400 mb-3">
+              Tour {group.current_round} · {group.payouts_done} versement{group.payouts_done > 1 ? "s" : ""} effectué{group.payouts_done > 1 ? "s" : ""}
+            </p>
+
+            {group.owner_id === user?.id ? (
+              group.payouts_done > 0 ? (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                  <Lock className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                  <div className="text-xs text-gray-600">
+                    <p className="font-semibold text-gray-800">Calendrier verrouillé</p>
+                    <p>Un bénéficiaire a déjà reçu — la date n&apos;est plus modifiable.</p>
+                    {group.payout_at && <p className="mt-1">Versement prévu : {new Date(group.payout_at).toLocaleString("fr-FR")}</p>}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-gray-600">Date et heure du versement</label>
+                  <input
+                    type="datetime-local"
+                    value={payoutInput}
+                    onChange={(e) => setPayoutInput(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  />
+                  <button
+                    onClick={savePayout}
+                    disabled={savingPayout}
+                    className="w-full py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 disabled:opacity-60"
+                  >
+                    {savingPayout ? "…" : "Enregistrer la date"}
+                  </button>
+                  <p className="text-[11px] text-gray-400">Modifiable tant qu&apos;aucun bénéficiaire n&apos;a reçu.</p>
+                </div>
+              )
+            ) : (
+              <p className="text-sm text-gray-600">
+                {group.payout_at
+                  ? `Versement prévu : ${new Date(group.payout_at).toLocaleString("fr-FR")}`
+                  : "Date du versement non encore définie."}
+              </p>
+            )}
+
+            {group.owner_id === user?.id && group.status === "active" && (
+              <button
+                onClick={confirmPayout}
+                className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-50"
+              >
+                <Send className="w-4 h-4" /> Versement effectué — tour suivant
+              </button>
+            )}
           </div>
 
           {/* Group info */}
