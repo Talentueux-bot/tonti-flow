@@ -379,6 +379,34 @@ export async function getMyProfile(): Promise<MyProfile | null> {
   return inserted as MyProfile;
 }
 
+export async function updateProfileInfo(fields: {
+  firstName: string;
+  lastName: string;
+  phone: string;
+}): Promise<void> {
+  const uid = await currentUserId();
+  if (!uid) throw new Error("Non connecté");
+  const fullName = `${fields.firstName} ${fields.lastName}`.trim();
+
+  // 1) Métadonnées d'auth → met à jour le nom affiché partout (déclenche USER_UPDATED).
+  const { error: authErr } = await supabase.auth.updateUser({
+    data: {
+      first_name: fields.firstName,
+      last_name: fields.lastName,
+      full_name: fullName,
+      phone: fields.phone,
+    },
+  });
+  if (authErr) throw authErr;
+
+  // 2) Table profiles (source pour l'admin / vérifications).
+  const { error } = await supabase
+    .from("profiles")
+    .update({ first_name: fields.firstName, last_name: fields.lastName, phone: fields.phone })
+    .eq("id", uid);
+  if (error) throw error;
+}
+
 export async function updateVerification(fields: {
   date_of_birth?: string;
   name_verified?: boolean;

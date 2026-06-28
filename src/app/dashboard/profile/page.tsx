@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Camera, Star, TrendingUp, Shield, CheckCircle, Award } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getDashboardStats, formatAmount } from "@/lib/db";
+import { getDashboardStats, updateProfileInfo, formatAmount } from "@/lib/db";
 import AccountPanel from "@/components/dashboard/AccountPanel";
 
 export default function ProfilePage() {
@@ -15,6 +16,34 @@ export default function ProfilePage() {
   const [groupCount, setGroupCount] = useState(0);
   const [paidCount, setPaidCount] = useState(0);
   const [totalContributed, setTotalContributed] = useState(0);
+
+  // Formulaire d'édition
+  const [firstName, setFirstName] = useState(profile.firstName);
+  const [lastName, setLastName] = useState(profile.lastName);
+  const [phone, setPhone] = useState(profile.phone);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setFirstName(profile.firstName);
+    setLastName(profile.lastName);
+    setPhone(profile.phone);
+  }, [profile.firstName, profile.lastName, profile.phone]);
+
+  const saveProfile = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("Le prénom et le nom sont obligatoires.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateProfileInfo({ firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim() });
+      toast.success("Profil mis à jour ✅");
+    } catch {
+      toast.error("Échec de la mise à jour.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     getDashboardStats().then((s) => {
@@ -77,9 +106,9 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <button className="shrink-0 px-4 py-2 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+            <a href="#edit-profile" className="shrink-0 px-4 py-2 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity text-center">
               Modifier le profil
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -145,45 +174,58 @@ export default function ProfilePage() {
       </div>
 
       {/* Edit form */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+      <div id="edit-profile" className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
         <h2 className="font-semibold text-gray-900 border-b border-gray-100 pb-4">Informations personnelles</h2>
 
         <div className="grid sm:grid-cols-2 gap-4">
-          {[
-            { label: "Prénom", value: profile.firstName },
-            { label: "Nom", value: profile.lastName },
-          ].map((f) => (
-            <div key={f.label}>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">{f.label}</label>
-              <input
-                type="text"
-                defaultValue={f.value}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-              />
-            </div>
-          ))}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Prénom</label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom</label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            />
+          </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
           <input
             type="email"
-            defaultValue={profile.email}
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+            value={profile.email}
+            disabled
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 text-sm cursor-not-allowed"
           />
+          <p className="text-[11px] text-gray-400 mt-1">L&apos;email ne peut pas être modifié ici.</p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Téléphone</label>
           <input
             type="tel"
-            defaultValue={profile.phone}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+221 77 000 00 00"
             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
           />
         </div>
 
-        <button className="px-6 py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity">
-          Sauvegarder les modifications
+        <button
+          onClick={saveProfile}
+          disabled={saving}
+          className="px-6 py-2.5 rounded-xl gradient-emerald text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 inline-flex items-center justify-center"
+        >
+          {saving ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : "Sauvegarder les modifications"}
         </button>
       </div>
     </div>
