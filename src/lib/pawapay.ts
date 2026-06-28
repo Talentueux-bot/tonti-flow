@@ -23,6 +23,71 @@ export function resolveCountry(appCountry?: string | null): { country: string; c
   return COUNTRY_MAP[(appCountry ?? "").toUpperCase()] ?? { country: "SEN", currency: "XOF" };
 }
 
+// Indicatif téléphonique par pays (pour compléter le numéro si besoin).
+const DIAL: Record<string, string> = { SN: "221", CI: "225", CM: "237", BJ: "229", GH: "233", BF: "226" };
+
+// (pays app 2 lettres) + opérateur générique → code PawaPay (selon ton compte production).
+const PROVIDER_MAP: Record<string, Record<string, string>> = {
+  SN: { orange: "ORANGE_SEN", free: "FREE_SEN" },
+  CI: { orange: "ORANGE_CIV", mtn: "MTN_MOMO_CIV" },
+  CM: { orange: "ORANGE_CMR", mtn: "MTN_MOMO_CMR" },
+  BJ: { mtn: "MTN_MOMO_BEN", moov: "MOOV_BEN" },
+};
+
+export function pawapayProvider(appCountry?: string | null, generic?: string | null): string | null {
+  return PROVIDER_MAP[(appCountry ?? "").toUpperCase()]?.[(generic ?? "").toLowerCase()] ?? null;
+}
+
+/** Normalise un numéro en MSISDN international sans '+' (ajoute l'indicatif pays si absent). */
+export function normalizeMsisdn(appCountry: string | null | undefined, raw: string): string {
+  let digits = (raw ?? "").replace(/\D/g, "");
+  const dial = DIAL[(appCountry ?? "").toUpperCase()];
+  if (dial && !digits.startsWith(dial)) {
+    digits = dial + digits.replace(/^0+/, "");
+  }
+  return digits;
+}
+
+type PayoutParams = {
+  payoutId: string;
+  phoneNumber: string;
+  provider: string;
+  amount: string;
+  currency: string;
+  customerMessage?: string;
+};
+
+export type PayoutStatus = "ACCEPTED" | "SUBMITTED" | "ENQUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" | "REJECTED" | "UNKNOWN";
+
+/** Initie un payout (envoi d'argent) vers un compte Mobile Money. */
+export async function createPayout(p: PayoutParams): Promise<{ status: PayoutStatus; message?: string }> {
+  const res = await fetch(`${BASE}/v2/payouts`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      payoutId: p.payoutId,
+      recipient: { type: "MMO", accountDetails: { phoneNumber: p.phoneNumber, provider: p.provider } },
+      amount: p.amount,
+      currency: p.currency,
+      customerMessage: (p.customerMessage ?? "Retrait TontiFlow").slice(0, 22),
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  const status = (data?.status as PayoutStatus) ?? "UNKNOWN";
+  if (status === "REJECTED" || !res.ok) {
+    return { status: "REJECTED", message: data?.failureReason?.failureMessage || "Payout refusé par PawaPay." };
+  }
+  return { status };
+}
+
+export async function getPayoutStatus(payoutId: string): Promise<PayoutStatus> {
+  const res = await fetch(`${BASE}/v2/payouts/${payoutId}`, {
+    headers: { Authorization: `Bearer ${TOKEN}` },
+  });
+  const data = await res.json().catch(() => ({}));
+  return (data?.data?.status ?? data?.status ?? "UNKNOWN") as PayoutStatus;
+}
+
 type PaymentPageParams = {
   depositId: string;
   amount: string;

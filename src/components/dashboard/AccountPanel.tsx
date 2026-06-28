@@ -11,7 +11,7 @@ import PaymentLogo from "@/components/dashboard/PaymentLogo";
 import { PAYMENT_CATALOG, type PaymentType } from "@/lib/paymentMethods";
 import {
   getMyProfile, updateVerification, uploadIdDocument, setWithdrawal,
-  walletWithdraw, listWalletTransactions, formatAmount,
+  listWalletTransactions, formatAmount,
   type MyProfile, type WalletTx,
 } from "@/lib/db";
 import { startPawapayCheckout } from "@/lib/checkout";
@@ -165,13 +165,20 @@ export default function AccountPanel() {
     if (n > profile.balance) { toast.error("Solde insuffisant."); return; }
     setBusy(true);
     try {
-      await walletWithdraw(n, profile.withdrawal_provider ?? "wave");
-      toast.success(`Retrait de ${formatAmount(n, authProfile.currency)} effectué`);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/pawapay/payout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ amount: n }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(j.error || "Échec du retrait."); return; }
+      toast.success("Retrait initié — vous allez recevoir l'argent sur votre Mobile Money.");
       setModal(null);
       setAmount("");
       await reload();
     } catch {
-      toast.error("Échec du retrait.");
+      toast.error("Erreur lors du retrait.");
     } finally {
       setBusy(false);
     }
