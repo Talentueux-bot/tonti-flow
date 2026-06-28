@@ -38,9 +38,10 @@ export default function ProfilePage() {
     try {
       await updateProfileInfo({ firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim() });
       toast.success("Profil mis à jour ✅");
-    } catch {
-      toast.error("Échec de la mise à jour.");
-    } finally {
+      // Rafraîchit l'app pour afficher le nouveau nom partout, de façon garantie.
+      setTimeout(() => window.location.reload(), 700);
+    } catch (e) {
+      toast.error((e as Error)?.message || "Échec de la mise à jour.");
       setSaving(false);
     }
   };
