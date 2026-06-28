@@ -10,10 +10,11 @@ import {
   Pencil, Save, X, Lock, CalendarClock, Send,
 } from "lucide-react";
 import {
-  getGroup, listMembers, addMember, updateGroup, updatePayoutAt, markPayoutDone,
+  getGroup, listMembers, addMember, updateGroup, updatePayoutAt,
   frequencyLabel, formatAmount, type GroupRow, type MemberRow,
 } from "@/lib/db";
 import { startPawapayCheckout } from "@/lib/checkout";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { waLink, waShareLink, reminderMessage, invitationMessage } from "@/lib/whatsapp";
 import FeeSummary from "@/components/dashboard/FeeSummary";
@@ -118,10 +119,17 @@ export default function GroupDetailPage() {
   };
 
   const confirmPayout = async () => {
-    if (!confirm("Confirmer que le bénéficiaire a reçu son versement ? Cela passe au tour suivant et verrouille la date.")) return;
+    if (!confirm("Confirmer le versement à ce bénéficiaire ? La cagnotte sera créditée sur son solde et on passe au tour suivant.")) return;
     try {
-      await markPayoutDone(id);
-      toast.success("Versement enregistré — tour suivant.");
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/tontine/advance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ groupId: id }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(j.error || "Échec du versement."); return; }
+      toast.success("Cagnotte créditée au bénéficiaire — tour suivant.");
       await reload();
     } catch (e) {
       toast.error((e as Error).message);
