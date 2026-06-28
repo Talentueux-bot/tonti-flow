@@ -169,7 +169,7 @@ export default function AccountPanel() {
       const res = await fetch("/api/pawapay/payout", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ amount: n }),
+        body: JSON.stringify({ amount: n, provider: wProvider, phone: wNumber }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) { toast.error(j.error || "Échec du retrait."); return; }
@@ -424,9 +424,33 @@ export default function AccountPanel() {
                     <span className="text-gray-500">Solde disponible</span>
                     <span className="font-bold text-gray-900">{formatAmount(profile.balance, authProfile.currency)}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <PaymentLogo type={(profile.withdrawal_provider as PaymentType) ?? "wave"} className="w-8 h-8" />
-                    Vers : <span className="font-medium text-gray-700">{profile.withdrawal_number}</span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Opérateur</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {PAYMENT_CATALOG.filter((p) => ["orange", "mtn", "free"].includes(p.type)).map((p) => (
+                        <button
+                          key={p.type}
+                          onClick={() => setWProvider(p.type)}
+                          className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all ${
+                            wProvider === p.type ? "border-emerald-500 bg-emerald-50" : "border-gray-100 hover:border-gray-300"
+                          }`}
+                        >
+                          <PaymentLogo type={p.type} className="w-8 h-8" />
+                          <span className="text-[10px] text-gray-600">{p.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1.5">Wave n&apos;est pas disponible pour les retraits automatiques.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Numéro de réception</label>
+                    <input
+                      type="tel"
+                      value={wNumber}
+                      onChange={(e) => setWNumber(e.target.value)}
+                      placeholder="+221 77 000 00 00"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Montant à retirer</label>

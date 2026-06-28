@@ -13,8 +13,8 @@ export async function POST(req: Request) {
   const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
 
-  const { amount } = (await req.json().catch(() => ({}))) as { amount?: number };
-  const amt = Number(amount);
+  const body = (await req.json().catch(() => ({}))) as { amount?: number; provider?: string; phone?: string };
+  const amt = Number(body.amount);
   if (!amt || amt <= 0) return NextResponse.json({ error: "Montant invalide." }, { status: 400 });
 
   const client = userClient(user.token);
@@ -25,20 +25,22 @@ export async function POST(req: Request) {
     .maybeSingle();
   if (!profile) return NextResponse.json({ error: "Profil introuvable." }, { status: 404 });
   if (Number(profile.balance) < amt) return NextResponse.json({ error: "Solde insuffisant." }, { status: 400 });
-  if (!profile.withdrawal_number) {
-    return NextResponse.json({ error: "Ajoutez d'abord un numéro de retrait." }, { status: 400 });
-  }
 
-  const provider = pawapayProvider(profile.country, profile.withdrawal_provider);
+  // Opérateur + numéro : ceux fournis au moment du retrait, sinon ceux enregistrés.
+  const genericProvider = body.provider || profile.withdrawal_provider;
+  const rawPhone = body.phone || profile.withdrawal_number;
+  if (!rawPhone) return NextResponse.json({ error: "Indiquez un numéro de retrait." }, { status: 400 });
+
+  const provider = pawapayProvider(profile.country, genericProvider);
   if (!provider) {
     return NextResponse.json(
-      { error: "Opérateur de retrait non pris en charge pour l'envoi automatique. Choisissez Orange, MTN ou Free Money." },
+      { error: "Opérateur non pris en charge pour l'envoi automatique. Choisissez Orange, MTN ou Free Money." },
       { status: 400 }
     );
   }
 
   const { currency } = resolveCountry(profile.country);
-  const phoneNumber = normalizeMsisdn(profile.country, profile.withdrawal_number);
+  const phoneNumber = normalizeMsisdn(profile.country, rawPhone);
   const payoutId = crypto.randomUUID();
 
   // Réserve les fonds : décrémente le solde + transaction "pending".
@@ -47,7 +49,7 @@ export async function POST(req: Request) {
     user_id: user.id,
     type: "withdrawal",
     amount: amt,
-    method: profile.withdrawal_provider,
+    method: genericProvider,
     status: "pending",
     reference: payoutId,
   });
