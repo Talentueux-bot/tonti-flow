@@ -70,6 +70,14 @@ export default function AccountPanel() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  const [payoutsReady, setPayoutsReady] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/pawapay/payout-status")
+      .then((r) => r.json())
+      .then((j) => setPayoutsReady(!!j.enabled))
+      .catch(() => setPayoutsReady(null));
+  }, []);
+
   if (loading || !profile) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-6 flex justify-center">
@@ -420,6 +428,11 @@ export default function AccountPanel() {
               {/* ── Retrait ── */}
               {modal === "withdraw" && (
                 <>
+                  {payoutsReady === false && (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                      ⏳ Les retraits vers Mobile Money sont en cours d&apos;activation et seront disponibles très bientôt. Votre cagnotte reste en sécurité sur votre solde.
+                    </div>
+                  )}
                   <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 text-sm">
                     <span className="text-gray-500">Solde disponible</span>
                     <span className="font-bold text-gray-900">{formatAmount(profile.balance, authProfile.currency)}</span>

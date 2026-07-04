@@ -80,6 +80,27 @@ export async function createPayout(p: PayoutParams): Promise<{ status: PayoutSta
   return { status };
 }
 
+/** Indique si au moins un opérateur a les payouts activés (OPERATIONAL) sur le compte. */
+export async function payoutsEnabled(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/v2/active-conf`, { headers: { Authorization: `Bearer ${TOKEN}` } });
+    const data = await res.json().catch(() => ({}));
+    const countries = (data?.countries ?? []) as Array<{
+      providers?: Array<{ currencies?: Array<{ operationTypes?: { PAYOUT?: { status?: string } } }> }>;
+    }>;
+    for (const c of countries) {
+      for (const p of c.providers ?? []) {
+        for (const cur of p.currencies ?? []) {
+          if (cur.operationTypes?.PAYOUT?.status === "OPERATIONAL") return true;
+        }
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function getPayoutStatus(payoutId: string): Promise<PayoutStatus> {
   const res = await fetch(`${BASE}/v2/payouts/${payoutId}`, {
     headers: { Authorization: `Bearer ${TOKEN}` },

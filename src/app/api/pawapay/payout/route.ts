@@ -68,7 +68,13 @@ export async function POST(req: Request) {
     const { data: p2 } = await client.from("profiles").select("balance").eq("id", user.id).maybeSingle();
     await client.from("profiles").update({ balance: Number(p2?.balance ?? 0) + amt }).eq("id", user.id);
     await client.from("wallet_transactions").update({ status: "failed" }).eq("reference", payoutId);
-    return NextResponse.json({ error: result.message || "Retrait refusé." }, { status: 400 });
+
+    const raw = result.message || "";
+    const pending = /configured to make payouts|not been configured|not configured/i.test(raw);
+    const error = pending
+      ? "Les retraits vers Mobile Money sont en cours d'activation et seront disponibles très bientôt. Votre solde reste en sécurité 💚"
+      : raw || "Retrait refusé.";
+    return NextResponse.json({ error, pending }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true, status: result.status });
