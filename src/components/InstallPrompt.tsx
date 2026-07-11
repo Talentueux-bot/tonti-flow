@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Download, Share, Zap } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { X, Download, Share, Zap, ChevronDown } from "lucide-react";
 
 type BIPEvent = Event & {
   prompt: () => Promise<void>;
@@ -9,79 +10,79 @@ type BIPEvent = Event & {
 };
 
 export default function InstallPrompt() {
+  const pathname = usePathname();
   const [deferred, setDeferred] = useState<BIPEvent | null>(null);
-  const [show, setShow] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [installed, setInstalled] = useState(true); // par défaut caché tant qu'on ne sait pas
+  const [hidden, setHidden] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [platform, setPlatform] = useState<"ios" | "android" | "other">("other");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (navigator as unknown as { standalone?: boolean }).standalone === true;
-    if (standalone) return;
-    if (localStorage.getItem("tf_install_dismissed") === "1") return;
+    if (standalone) { setInstalled(true); return; }
+    setInstalled(false);
 
     const ua = navigator.userAgent;
-    const ios = /iphone|ipad|ipod/i.test(ua) && !/crios|fxios/i.test(ua);
-    if (ios) {
-      setIsIOS(true);
-      setShow(true);
-      return;
-    }
+    setPlatform(/iphone|ipad|ipod/i.test(ua) ? "ios" : /android/i.test(ua) ? "android" : "other");
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferred(e as BIPEvent);
-      setShow(true);
-    };
+    const handler = (e: Event) => { e.preventDefault(); setDeferred(e as BIPEvent); };
     window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", () => setShow(false));
+    window.addEventListener("appinstalled", () => setInstalled(true));
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  if (!show) return null;
+  // Réapparaît à chaque changement de page.
+  useEffect(() => { setHidden(false); setShowHelp(false); }, [pathname]);
 
-  const install = async () => {
-    if (!deferred) return;
-    await deferred.prompt();
-    await deferred.userChoice.catch(() => {});
-    setShow(false);
+  if (installed || hidden) return null;
+
+  const onClick = async () => {
+    if (deferred) {
+      await deferred.prompt();
+      await deferred.userChoice.catch(() => {});
+      setDeferred(null);
+      return;
+    }
+    setShowHelp((v) => !v);
   };
 
-  const dismiss = () => {
-    setShow(false);
-    localStorage.setItem("tf_install_dismissed", "1");
-  };
+  const help =
+    platform === "ios"
+      ? "Appuyez sur Partager (carré + flèche ↑) en bas de Safari, puis « Sur l'écran d'accueil »."
+      : platform === "android"
+      ? "Ouvrez le menu ⋮ de Chrome, puis « Installer l'application » (ou « Ajouter à l'écran d'accueil »)."
+      : "Ouvrez le menu de votre navigateur, puis « Installer l'application ».";
 
   return (
     <div className="fixed z-[60] bottom-20 lg:bottom-6 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-xl p-4 flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl gradient-emerald flex items-center justify-center shrink-0">
-          <Zap className="w-5 h-5 text-white" fill="white" />
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
+        <div className="flex items-center gap-3 p-3">
+          <div className="w-9 h-9 rounded-xl gradient-emerald flex items-center justify-center shrink-0">
+            <Zap className="w-4.5 h-4.5 text-white" fill="white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 leading-tight">Installer l&apos;application</p>
+            <p className="text-[11px] text-gray-400">Accès rapide, plein écran</p>
+          </div>
+          <button
+            onClick={onClick}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl gradient-emerald text-white text-xs font-semibold hover:opacity-90 shrink-0"
+          >
+            {deferred ? <Download className="w-3.5 h-3.5" /> : platform === "ios" ? <Share className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            Installer
+          </button>
+          <button onClick={() => setHidden(true)} className="p-1 rounded-lg hover:bg-gray-100 shrink-0" title="Masquer">
+            <X className="w-4 h-4 text-gray-400" />
+          </button>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900">Installer TontiFlow</p>
-          {isIOS ? (
-            <p className="text-xs text-gray-500 mt-0.5">
-              Appuyez sur <Share className="inline w-3.5 h-3.5 -mt-0.5" /> <strong>Partager</strong>, puis{" "}
-              <strong>« Sur l&apos;écran d&apos;accueil »</strong>.
-            </p>
-          ) : (
-            <>
-              <p className="text-xs text-gray-500 mt-0.5">Accès rapide, plein écran, comme une vraie app.</p>
-              <button
-                onClick={install}
-                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg gradient-emerald text-white text-xs font-semibold hover:opacity-90"
-              >
-                <Download className="w-3.5 h-3.5" /> Installer
-              </button>
-            </>
-          )}
-        </div>
-        <button onClick={dismiss} className="p-1 rounded-lg hover:bg-gray-100 shrink-0" title="Fermer">
-          <X className="w-4 h-4 text-gray-400" />
-        </button>
+        {showHelp && (
+          <div className="px-4 pb-3 -mt-1">
+            <p className="text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-xl p-3">{help}</p>
+          </div>
+        )}
       </div>
     </div>
   );
